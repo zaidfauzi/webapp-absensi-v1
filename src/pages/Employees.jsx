@@ -20,7 +20,8 @@ export default function Employees() {
   const openEdit = (e) => { setForm({ ...e }); setEditing(e.id); setOpen(true) }
 
   const save = () => {
-    if (!form.name || !form.nip) { toast.error('NIP dan nama wajib'); return }
+    if (!form.name || !form.nip) { toast.error('Username dan nama wajib'); return }
+    if (!form.password && !editing) { toast.error('Password wajib diisi'); return }
     if (editing) { updateEmployee(editing, form); toast.success('Pegawai diperbarui') }
     else { addEmployee(form); toast.success('Pegawai ditambahkan') }
     setOpen(false)

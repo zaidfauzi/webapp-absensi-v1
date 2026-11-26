@@ -33,7 +33,7 @@ const Ctx = createContext(null)
 
 export function AppProvider({ children }) {
   const initial = loadState()
-  const [users] = useState(initial?.users || seedUsers)
+  const [users, setUsers] = useState(initial?.users || seedUsers)
   const [employees, setEmployees] = useState(initial?.employees || seedEmployees)
   const [attendances, setAttendances] = useState(initial?.attendances || seedAttendances())
   const [leaveRequests, setLeaveRequests] = useState(initial?.leaveRequests || seedLeaveRequests)
@@ -47,16 +47,18 @@ export function AppProvider({ children }) {
     if (!hasSupabase) return
     ;(async () => {
       try {
-        const [{ data: emps }, { data: atts }, { data: leaves }, { data: sets }] = await Promise.all([
+        const [{ data: emps }, { data: atts }, { data: leaves }, { data: sets }, { data: usrs }] = await Promise.all([
           supabase.from('employees').select('*'),
           supabase.from('attendances').select('*'),
           supabase.from('leave_requests').select('*'),
           supabase.from('system_settings').select('*').limit(1),
+          supabase.from('users').select('*'),
         ])
         if (emps?.length) setEmployees(emps.map(toCamelObj))
         if (atts?.length) setAttendances(atts.map(toCamelObj))
         if (leaves?.length) setLeaveRequests(leaves.map(toCamelObj))
         if (sets?.length) setSettings({ ...defaultSettings, ...toCamelObj(sets[0]) })
+        if (usrs?.length) setUsers(usrs.map(toCamelObj))
       } catch (e) { console.warn('Supabase load failed, using local data', e) }
     })()
   }, [])
@@ -71,8 +73,21 @@ export function AppProvider({ children }) {
     localStorage.setItem(KEY, JSON.stringify({ users, employees, attendances, leaveRequests, settings, schedules, currentUser, theme }))
   }, [users, employees, attendances, leaveRequests, settings, schedules, currentUser, theme])
 
-  const login = useCallback((username, password) => {
-    const u = users.find((x) => x.username === username && x.password === password)
+  const login = useCallback(async (username, password) => {
+    if (hasSupabase) {
+      try {
+        const { data, error } = await supabase.from('users').select('*').eq('username', username).maybeSingle()
+        if (!error && data) {
+          const u = toCamelObj(data)
+          if (u.password === password || u.passwordHash === password) {
+            setCurrentUser(u)
+            return { ok: true, user: u }
+          }
+          return { ok: false, message: 'Password salah' }
+        }
+      } catch (e) { console.warn('Supabase login failed', e) }
+    }
+    const u = users.find((x) => x.username === username && (x.password === password || x.passwordHash === password))
     if (!u) return { ok: false, message: 'Username atau password salah' }
     setCurrentUser(u)
     return { ok: true, user: u }
@@ -83,17 +98,50 @@ export function AppProvider({ children }) {
   const toggleTheme = useCallback(() => setTheme((t) => (t === 'dark' ? 'light' : 'dark')), [])
 
   const addEmployee = useCallback((emp) => {
-    const row = { ...emp, id: 'e' + Date.now() }
+    const id = 'e' + Date.now()
+    const row = { ...emp, id }
     setEmployees((prev) => [...prev, row])
     if (hasSupabase) supabase.from('employees').insert(toSnakeObj(row)).then(() => {})
+    // create login account if password provided
+    if (emp.password) {
+      const userId = 'u' + Date.now()
+      const userRow = { id: userId, username: emp.nip, passwordHash: emp.password, role: emp.role || 'pegawai', employeeId: id }
+      setUsers((prev) => [...prev, userRow])
+      if (hasSupabase) supabase.from('users').insert(toSnakeObj(userRow)).then((r) => { if (r.error) console.warn(r.error) })
+    }
   }, [])
   const updateEmployee = useCallback((id, patch) => {
     setEmployees((prev) => prev.map((e) => (e.id === id ? { ...e, ...patch } : e)))
     if (hasSupabase) supabase.from('employees').update(toSnakeObj(patch)).eq('id', id).then(() => {})
+    // sync user account
+    setUsers((prev) => prev.map((u) => (u.employeeId === id ? { ...u, username: patch.nip || u.username, role: patch.role || u.role, password: patch.password || u.password, passwordHash: patch.password || u.passwordHash } : u)))
+    const userPatch = {}
+    if (patch.nip) userPatch.username = patch.nip
+    if (patch.role) userPatch.role = patch.role
+    if (patch.password) userPatch.passwordHash = patch.password
+    if (Object.keys(userPatch).length && hasSupabase) {
+      // find user id by employee
+      // update all matching rows
+      supabase.from('users').update(toSnakeObj(userPatch)).eq('employee_id', id).then(() => {})
+    }
+    // if password provided and no user exists, create one
+    if (patch.password) {
+      setUsers((prev) => {
+        const exists = prev.some((u) => u.employeeId === id)
+        if (exists) return prev
+        const newRow = { id: 'u' + Date.now(), username: patch.nip || id, password: patch.password, passwordHash: patch.password, role: patch.role || 'pegawai', employeeId: id }
+        if (hasSupabase) supabase.from('users').insert(toSnakeObj(newRow)).then(() => {})
+        return [...prev, newRow]
+      })
+    }
   }, [])
   const deleteEmployee = useCallback((id) => {
     setEmployees((prev) => prev.filter((e) => e.id !== id))
-    if (hasSupabase) supabase.from('employees').delete().eq('id', id).then(() => {})
+    setUsers((prev) => prev.filter((u) => u.employeeId !== id))
+    if (hasSupabase) {
+      supabase.from('employees').delete().eq('id', id).then(() => {})
+      supabase.from('users').delete().eq('employee_id', id).then(() => {})
+    }
   }, [])
 
   const checkIn = useCallback((employeeId, payload) => {

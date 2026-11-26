@@ -41,7 +41,19 @@ export default function Settings() {
           <div><Label>Telepon</Label><Input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} /></div>
           <div><Label>Email</Label><Input value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} /></div>
           <div><Label>Website</Label><Input value={form.website} onChange={(e) => setForm({ ...form, website: e.target.value })} /></div>
-          <div><Label>Logo URL</Label><Input value={form.logoUrl} onChange={(e) => setForm({ ...form, logoUrl: e.target.value })} /></div>
+          <div className="md:col-span-2">
+            <Label>Logo Sekolah</Label>
+            <div className="flex items-center gap-3">
+              {form.logoUrl && <img src={form.logoUrl} className="h-12 w-12 rounded-lg object-contain border border-[var(--color-border)]" />}
+              <Input type="file" accept="image/*" onChange={(e) => {
+                const f = e.target.files?.[0]
+                if (!f) return
+                const r = new FileReader()
+                r.onload = () => setForm((prev) => ({ ...prev, logoUrl: r.result }))
+                r.readAsDataURL(f)
+              }} />
+            </div>
+          </div>
         </div>
       </Card>
 

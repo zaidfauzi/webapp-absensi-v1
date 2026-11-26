@@ -29,7 +29,7 @@ export default function Layout({ children }) {
       {/* Sidebar desktop */}
       <aside className="hidden md:flex md:flex-col w-64 border-r border-[var(--color-border)] bg-[var(--color-card)]">
         <div className="p-5 border-b border-[var(--color-border)] flex items-center gap-3">
-          <div className="h-10 w-10 rounded-xl bg-[var(--color-primary)] text-white flex items-center justify-center font-bold">S</div>
+          {settings.logoUrl ? <img src={settings.logoUrl} className="h-10 w-10 rounded-xl object-contain" /> : <div className="h-10 w-10 rounded-xl bg-[var(--color-primary)] text-white flex items-center justify-center font-bold">S</div>}
           <div className="min-w-0">
             <div className="font-bold text-sm truncate">{settings.schoolName}</div>
             <div className="text-xs text-[var(--color-muted-foreground)] truncate">{ROLES_LABEL(role)}</div>

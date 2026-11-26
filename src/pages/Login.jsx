@@ -16,7 +16,7 @@ export default function Login() {
   const submit = async (e) => {
     e.preventDefault()
     setLoading(true)
-    const res = login(u, p)
+    const res = await login(u, p)
     setLoading(false)
     if (res.ok) { toast.success('Login berhasil'); navigate('/') }
     else toast.error(res.message)
@@ -37,7 +37,7 @@ export default function Login() {
     <div className="min-h-screen grid md:grid-cols-2">
       <div className="hidden md:flex flex-col justify-center items-center bg-gradient-to-br from-[var(--color-primary)] to-teal-900 text-white p-10">
         <div className="max-w-md text-center">
-          <div className="h-20 w-20 rounded-2xl bg-white/20 backdrop-blur flex items-center justify-center text-3xl font-bold mx-auto mb-6">S</div>
+          {settings.logoUrl ? <img src={settings.logoUrl} className="h-20 w-20 rounded-2xl bg-white/20 backdrop-blur object-contain mx-auto mb-6" /> : <div className="h-20 w-20 rounded-2xl bg-white/20 backdrop-blur flex items-center justify-center text-3xl font-bold mx-auto mb-6">S</div>}
           <h1 className="text-3xl font-bold mb-2">{settings.schoolName}</h1>
           <p className="text-white/80">{settings.slogan}</p>
           <p className="mt-6 text-sm text-white/60">{settings.address}</p>
@@ -49,7 +49,7 @@ export default function Login() {
         </button>
         <Card className="w-full max-w-md p-8 backdrop-blur">
           <div className="text-center mb-6">
-            <div className="h-14 w-14 rounded-xl bg-[var(--color-primary)] text-white flex items-center justify-center text-2xl font-bold mx-auto mb-3">S</div>
+            {settings.logoUrl ? <img src={settings.logoUrl} className="h-14 w-14 rounded-xl object-contain mx-auto mb-3" /> : <div className="h-14 w-14 rounded-xl bg-[var(--color-primary)] text-white flex items-center justify-center text-2xl font-bold mx-auto mb-3">S</div>}
             <h2 className="text-xl font-bold">Masuk ke Sistem</h2>
             <p className="text-sm text-[var(--color-muted-foreground)]">Absensi & Monitoring Kedisiplinan</p>
           </div>
