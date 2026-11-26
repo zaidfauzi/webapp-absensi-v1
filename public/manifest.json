@@ -1,0 +1,13 @@
+{
+  "name": "SDIT Absensi & Monitoring",
+  "short_name": "Absensi SDIT",
+  "description": "Aplikasi absensi dan monitoring kedisiplinan pegawai SDIT",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0f766e",
+  "theme_color": "#0f766e",
+  "orientation": "portrait",
+  "icons": [
+    { "src": "/vite.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}
