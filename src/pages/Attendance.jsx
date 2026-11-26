@@ -1,12 +1,15 @@
 import { useState, useRef, useEffect } from 'react'
 import { useApp } from '../context/AppContext'
-import { Card, Button, Badge } from '../components/ui'
+import { Card, Button, Badge, Input } from '../components/ui'
 import { Camera, MapPin, CheckCircle2, AlertTriangle, RefreshCw } from 'lucide-react'
 import { haversine, fmtTime } from '../lib/utils'
 import { toast } from 'sonner'
 
 export default function Attendance() {
-  const { currentUser, employees, settings, checkIn, checkOut, attendances } = useApp()
+  const { currentUser, employees, settings, checkIn, checkOut, attendances, login } = useApp()
+  const [qUser, setQUser] = useState('')
+  const [qPass, setQPass] = useState('')
+  const [qLoading, setQLoading] = useState(false)
   const emp = employees.find((e) => e.id === currentUser?.employeeId)
   const videoRef = useRef(null)
   const canvasRef = useRef(null)
@@ -98,6 +101,29 @@ export default function Attendance() {
     }
     setLoading(false)
     toast.success(mode === 'in' ? 'Absen masuk berhasil' : 'Absen pulang berhasil')
+  }
+
+  if (!currentUser) {
+    return (
+      <div className="space-y-6 max-w-md mx-auto">
+        <div>
+          <h1 className="text-2xl font-bold">Absen Cepat</h1>
+          <p className="text-sm text-[var(--color-muted-foreground)]">Masuk dengan akun Anda untuk melanjutkan absensi</p>
+        </div>
+        <Card className="p-5 space-y-3">
+          <div><label className="text-sm font-medium mb-1 block">Username</label><Input value={qUser} onChange={(e) => setQUser(e.target.value)} placeholder="username" /></div>
+          <div><label className="text-sm font-medium mb-1 block">Password</label><Input type="password" value={qPass} onChange={(e) => setQPass(e.target.value)} placeholder="••••••" /></div>
+          <Button className="w-full" disabled={qLoading} onClick={async () => {
+            setQLoading(true)
+            const res = await login(qUser, qPass)
+            setQLoading(false)
+            if (res.ok) toast.success('Login berhasil')
+            else toast.error(res.message)
+          }}>{qLoading ? 'Memproses...' : 'Masuk & Absen'}</Button>
+          <Button variant="outline" className="w-full" onClick={() => window.location.href = '/login'}>Kembali ke Login</Button>
+        </Card>
+      </div>
+    )
   }
 
   return (
