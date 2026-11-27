@@ -11,6 +11,7 @@ export default function Schedules() {
     try { return JSON.parse(localStorage.getItem('manualSchedules') || '[]') } catch { return [] }
   })
   const [mForm, setMForm] = useState({ employeeId: '', days: [], in: '06:55', out: '15:00' })
+  const [posFilterGuru, setPosFilterGuru] = useState('')
 
   const [special, setSpecial] = useState(() => {
     try { return JSON.parse(localStorage.getItem('specialSchedules') || '[]') } catch { return [] }
@@ -106,13 +107,20 @@ export default function Schedules() {
           <h3 className="font-semibold">Input Jadwal Kerja</h3>
           <div className="grid md:grid-cols-2 gap-3">
             <div>
-              <Label>Pegawai (Guru/Staff)</Label>
-              <Select value={mForm.employeeId} onChange={(e) => setMForm({ ...mForm, employeeId: e.target.value })}>
-                <option value="">Pilih pegawai</option>
-                {guruStaff.map((e) => <option key={e.id} value={e.id}>{e.name} - {e.position}</option>)}
+              <Label>Jabatan</Label>
+              <Select value={posFilterGuru} onChange={(e) => { setPosFilterGuru(e.target.value); setMForm({ ...mForm, employeeId: '' }) }}>
+                <option value="">Semua Jabatan</option>
+                {Array.from(new Set(guruStaff.map((e) => e.position))).map((p) => <option key={p} value={p}>{p}</option>)}
               </Select>
             </div>
             <div>
+              <Label>Pegawai (Guru/Staff)</Label>
+              <Select value={mForm.employeeId} onChange={(e) => setMForm({ ...mForm, employeeId: e.target.value })}>
+                <option value="">Pilih pegawai</option>
+                {guruStaff.filter((e) => !posFilterGuru || e.position === posFilterGuru).map((e) => <option key={e.id} value={e.id}>{e.name} - {e.position}</option>)}
+              </Select>
+            </div>
+            <div className="md:col-span-2">
               <Label>Hari Kerja</Label>
               <div className="flex flex-wrap gap-2 mt-1">
                 {['Sen','Sel','Rab','Kam','Jum','Sab'].map((d) => (
@@ -184,7 +192,7 @@ export default function Schedules() {
                 {employees.filter((e) => !posFilter || e.position === posFilter).map((e) => <option key={e.id} value={e.id}>{e.name} - {e.position}</option>)}
               </Select>
             </div>
-            <div>
+            <div className="md:col-span-2">
               <Label>Hari Kerja</Label>
               <div className="flex flex-wrap gap-2 mt-1">
                 {['Sen','Sel','Rab','Kam','Jum','Sab','Min'].map((d) => (
