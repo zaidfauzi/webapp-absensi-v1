@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useApp } from '../context/AppContext'
 import { Card, Button, Select, Input, Label } from '../components/ui'
 import { Download, FileSpreadsheet, FileText } from 'lucide-react'
@@ -10,6 +11,8 @@ import { toast } from 'sonner'
 
 export default function Reports() {
   const { employees, attendances, settings } = useApp()
+  const navigate = useNavigate()
+  const [exportOpen, setExportOpen] = useState(false)
   const [from, setFrom] = useState(new Date().toISOString().slice(0, 10))
   const [to, setTo] = useState(new Date().toISOString().slice(0, 10))
   const [empId, setEmpId] = useState('all')
@@ -85,9 +88,39 @@ export default function Reports() {
   }
 
   const run = () => {
-    if (format === 'xlsx') exportXlsx()
-    else if (format === 'csv') exportCsv()
-    else exportPdf()
+    exportXlsx()
+  }
+
+  // Rekap per pegawai
+  const recapEmployee = () => {
+    const map = {}
+    buildRows().forEach((r) => {
+      if (!map[r.Nama]) map[r.Nama] = { nama: r.Nama, nip: r.NIP, jabatan: r.Jabatan, hadir: 0, terlambat: 0, pulangCepat: 0, izin: 0, alpha: 0, telatMenit: 0, pcMenit: 0 }
+      const e = map[r.Nama]
+      if (r['Jam Masuk'] !== '-') e.hadir++
+      if (r.Status === 'terlambat') e.terlambat++
+      if ((r['Pulang Cepat (mnt)'] || 0) > 0) e.pulangCepat++
+      if (['izin','sakit'].includes(r.Status)) e.izin++
+      if (r['Jam Masuk'] === '-') e.alpha++
+      e.telatMenit += r['Terlambat (mnt)'] || 0
+      e.pcMenit += r['Pulang Cepat (mnt)'] || 0
+    })
+    return Object.values(map)
+  }
+
+  // Rekap per jabatan
+  const recapPosition = () => {
+    const map = {}
+    buildRows().forEach((r) => {
+      if (!map[r.Jabatan]) map[r.Jabatan] = { jabatan: r.Jabatan, hadir: 0, terlambat: 0, pulangCepat: 0, izin: 0, alpha: 0 }
+      const p = map[r.Jabatan]
+      if (r['Jam Masuk'] !== '-') p.hadir++
+      if (r.Status === 'terlambat') p.terlambat++
+      if ((r['Pulang Cepat (mnt)'] || 0) > 0) p.pulangCepat++
+      if (['izin','sakit'].includes(r.Status)) p.izin++
+      if (r['Jam Masuk'] === '-') p.alpha++
+    })
+    return Object.values(map)
   }
 
   return (
@@ -106,16 +139,11 @@ export default function Reports() {
               {employees.map((e) => <option key={e.id} value={e.id}>{e.name}</option>)}
             </Select>
           </div>
-          <div><Label>Format</Label>
-            <Select value={format} onChange={(e) => setFormat(e.target.value)}>
-              <option value="xlsx">Excel (.xlsx)</option>
-              <option value="csv">CSV (.csv)</option>
-              <option value="pdf">PDF (.pdf)</option>
-            </Select>
-          </div>
+
         </div>
         <div className="flex gap-2">
-          <Button onClick={run}><Download size={16} /> Ekspor</Button>
+          <Button onClick={() => setExportOpen(true)}><Download size={16} /> Ekspor</Button>
+          <Button onClick={() => window.print()}><Download size={16} /> Cetak</Button>
           <span className="text-xs text-[var(--color-muted-foreground)] self-center">{buildRows().length} baris data</span>
         </div>
       </Card>
@@ -137,6 +165,21 @@ export default function Reports() {
           </table>
         </div>
       </Card>
+
+      {exportOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/40" onClick={() => setExportOpen(false)} />
+          <Card className="relative z-10 w-full max-w-sm p-5 space-y-3">
+            <h3 className="font-semibold">Pilih Format Ekspor</h3>
+            <div className="flex flex-col gap-2">
+              <Button onClick={() => { exportXlsx(); setExportOpen(false) }}>Excel (.xlsx)</Button>
+              <Button variant="outline" onClick={() => { exportCsv(); setExportOpen(false) }}>CSV (.csv)</Button>
+              <Button variant="outline" onClick={() => { exportPdf(); setExportOpen(false) }}>PDF (.pdf)</Button>
+            </div>
+            <Button variant="ghost" className="w-full" onClick={() => setExportOpen(false)}>Batal</Button>
+          </Card>
+        </div>
+      )}
     </div>
   )
 }

@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useApp } from '../context/AppContext'
 import { Card, Button, Badge, Input } from '../components/ui'
 import { Camera, MapPin, CheckCircle2, AlertTriangle, RefreshCw } from 'lucide-react'
@@ -7,6 +8,7 @@ import { toast } from 'sonner'
 
 export default function Attendance() {
   const { currentUser, employees, settings, checkIn, checkOut, attendances, login } = useApp()
+  const navigate = useNavigate()
   const [qUser, setQUser] = useState('')
   const [qPass, setQPass] = useState('')
   const [qLoading, setQLoading] = useState(false)
@@ -106,6 +108,7 @@ export default function Attendance() {
   if (!currentUser) {
     return (
       <div className="space-y-6 max-w-md mx-auto">
+        <Button variant="outline" size="sm" onClick={() => navigate(-1)}>← Kembali</Button>
         <div>
           <h1 className="text-2xl font-bold">Absen Cepat</h1>
           <p className="text-sm text-[var(--color-muted-foreground)]">Masuk dengan akun Anda untuk melanjutkan absensi</p>
@@ -128,6 +131,7 @@ export default function Attendance() {
 
   return (
     <div className="space-y-6 max-w-2xl mx-auto">
+      <Button variant="outline" size="sm" onClick={() => navigate(-1)}>← Kembali</Button>
       <div>
         <h1 className="text-2xl font-bold">Absensi Rekam Wajah</h1>
         <p className="text-sm text-[var(--color-muted-foreground)]">Verifikasi lokasi & wajah sebelum absen</p>
