@@ -10,7 +10,6 @@ import Leave from './pages/Leave'
 import Reports from './pages/Reports'
 import Settings from './pages/Settings'
 import Profile from './pages/Profile'
-import SecuritySchedule from './pages/SecuritySchedule'
 import { Toaster } from 'sonner'
 
 function Protected({ children }) {
@@ -34,7 +33,6 @@ export default function App() {
       <Route path="/reports" element={<Protected><Reports /></Protected>} />
       <Route path="/settings" element={<Protected><Settings /></Protected>} />
       <Route path="/profile" element={<Protected><Profile /></Protected>} />
-      <Route path="/security-schedule" element={<Protected><SecuritySchedule /></Protected>} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
     </>

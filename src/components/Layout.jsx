@@ -9,7 +9,6 @@ const navItems = [
   { to: '/attendance', label: 'Absensi', icon: Camera, roles: ['admin','yayasan','kepsek','wakasek','tu','pegawai'] },
   { to: '/employees', label: 'Pegawai', icon: Users, roles: ['admin','tu'] },
   { to: '/schedules', label: 'Jadwal', icon: CalendarDays, roles: ['admin','tu','kepsek','wakasek'] },
-  { to: '/security-schedule', label: 'Jadwal Security', icon: CalendarDays, roles: ['admin','tu','kepsek','wakasek'] },
   { to: '/leave', label: 'Izin', icon: ClipboardList, roles: ['admin','yayasan','kepsek','wakasek','tu','pegawai'] },
   { to: '/reports', label: 'Laporan', icon: FileBarChart, roles: ['admin','yayasan','kepsek','wakasek','tu'] },
   { to: '/settings', label: 'Pengaturan', icon: Settings, roles: ['admin'] },

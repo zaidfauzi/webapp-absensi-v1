@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react'
 import { useApp } from '../context/AppContext'
 import { Card, Button, Select, Input, Label } from '../components/ui'
-import { CalendarDays } from 'lucide-react'
 import { toast } from 'sonner'
 
 export default function Schedules() {
   const { employees } = useApp()
+
+  // Jadwal Guru & Staff
   const [tab, setTab] = useState('manual')
   const [manual, setManual] = useState(() => {
     try { return JSON.parse(localStorage.getItem('manualSchedules') || '[]') } catch { return [] }
@@ -13,17 +14,35 @@ export default function Schedules() {
   const [mForm, setMForm] = useState({ employeeId: '', days: [], in: '06:55', out: '15:00' })
   const [posFilterGuru, setPosFilterGuru] = useState('')
 
+  // Jadwal Khusus
   const [special, setSpecial] = useState(() => {
     try { return JSON.parse(localStorage.getItem('specialSchedules') || '[]') } catch { return [] }
   })
-  const [sForm, setSForm] = useState({ employeeId: '', days: [], in: '06:00', out: '15:30' })
+  const [sForm, setSForm] = useState({ employeeId: '', days: [], in: '06:00', out: '15:30', week: '1' })
   const [posFilter, setPosFilter] = useState('')
+
+  // Jadwal Security
+  const [security, setSecurity] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('securitySchedules') || '[]') } catch { return [] }
+  })
+  const [secForm, setSecForm] = useState({ employeeId: '', days: [], in: '05:55', out: '17:00' })
+
+  // edit day modals
+  const [editingDay, setEditingDay] = useState(null)
+  const [dayIn, setDayIn] = useState('')
+  const [dayOut, setDayOut] = useState('')
+
   const [editingDayS, setEditingDayS] = useState(null)
   const [dayInS, setDayInS] = useState('')
   const [dayOutS, setDayOutS] = useState('')
 
+  const [editingDaySec, setEditingDaySec] = useState(null)
+  const [dayInSec, setDayInSec] = useState('')
+  const [dayOutSec, setDayOutSec] = useState('')
+
   useEffect(() => { localStorage.setItem('manualSchedules', JSON.stringify(manual)) }, [manual])
   useEffect(() => { localStorage.setItem('specialSchedules', JSON.stringify(special)) }, [special])
+  useEffect(() => { localStorage.setItem('securitySchedules', JSON.stringify(security)) }, [security])
 
   const guruStaff = employees.filter((e) => e.scheduleGroup === 'guru' || ['Guru','Staff TU'].includes(e.position))
 
@@ -35,11 +54,40 @@ export default function Schedules() {
     ...f, days: f.days.includes(d) ? f.days.filter((x) => x !== d) : [...f.days, d]
   }))
 
+  const toggleDaySec = (d) => setSecForm((f) => ({
+    ...f, days: f.days.includes(d) ? f.days.filter((x) => x !== d) : [...f.days, d]
+  }))
+
+  const saveManual = () => {
+    if (!mForm.employeeId || mForm.days.length === 0) { toast.error('Pilih pegawai dan hari kerja'); return }
+    const emp = employees.find((e) => e.id === mForm.employeeId)
+    setManual((prev) => [...prev, { id: 'ms-' + Date.now(), employeeId: mForm.employeeId, name: emp?.name, days: mForm.days, in: mForm.in, out: mForm.out }])
+    setMForm({ employeeId: '', days: [], in: '06:55', out: '15:00' })
+    toast.success('Jadwal manual disimpan')
+  }
+
+  const removeManual = (id) => setManual((prev) => prev.filter((m) => m.id !== id))
+
+  const openDayEdit = (entryId) => {
+    const entry = manual.find((m) => m.id === entryId)
+    if (!entry) return
+    setEditingDay(entryId)
+    setDayIn(entry.in)
+    setDayOut(entry.out)
+  }
+
+  const saveDayEdit = () => {
+    if (!editingDay) return
+    setManual((prev) => prev.map((m) => (m.id === editingDay ? { ...m, in: dayIn, out: dayOut } : m)))
+    toast.success('Jam kerja diperbarui')
+    setEditingDay(null)
+  }
+
   const saveSpecial = () => {
     if (!sForm.employeeId || sForm.days.length === 0) { toast.error('Pilih pegawai dan hari kerja'); return }
     const emp = employees.find((e) => e.id === sForm.employeeId)
-    setSpecial((prev) => [...prev, { id: 'ss-' + Date.now(), employeeId: sForm.employeeId, name: emp?.name, days: sForm.days, in: sForm.in, out: sForm.out }])
-    setSForm({ employeeId: '', days: [], in: '06:00', out: '15:30' })
+    setSpecial((prev) => [...prev, { id: 'ss-' + Date.now(), employeeId: sForm.employeeId, name: emp?.name, days: sForm.days, in: sForm.in, out: sForm.out, week: sForm.week }])
+    setSForm({ employeeId: '', days: [], in: '06:00', out: '15:30', week: '1' })
     toast.success('Jadwal khusus disimpan')
   }
 
@@ -60,33 +108,29 @@ export default function Schedules() {
     setEditingDayS(null)
   }
 
-  const saveManual = () => {
-    if (!mForm.employeeId || mForm.days.length === 0) { toast.error('Pilih pegawai dan hari kerja'); return }
-    const emp = employees.find((e) => e.id === mForm.employeeId)
-    setManual((prev) => [...prev, { id: 'ms-' + Date.now(), employeeId: mForm.employeeId, name: emp?.name, days: mForm.days, in: mForm.in, out: mForm.out }])
-    setMForm({ employeeId: '', days: [], in: '06:55', out: '15:00' })
-    toast.success('Jadwal manual disimpan')
+  const saveSecurity = () => {
+    if (!secForm.employeeId || secForm.days.length === 0) { toast.error('Pilih pegawai dan hari kerja'); return }
+    const emp = employees.find((e) => e.id === secForm.employeeId)
+    setSecurity((prev) => [...prev, { id: 'sec-' + Date.now(), employeeId: secForm.employeeId, name: emp?.name, days: secForm.days, in: secForm.in, out: secForm.out }])
+    setSecForm({ employeeId: '', days: [], in: '05:55', out: '17:00' })
+    toast.success('Jadwal security disimpan')
   }
 
-  const removeManual = (id) => setManual((prev) => prev.filter((m) => m.id !== id))
+  const removeSecurity = (id) => setSecurity((prev) => prev.filter((m) => m.id !== id))
 
-  const [editingDay, setEditingDay] = useState(null)
-  const [dayIn, setDayIn] = useState('')
-  const [dayOut, setDayOut] = useState('')
-
-  const openDayEdit = (entryId) => {
-    const entry = manual.find((m) => m.id === entryId)
+  const openDayEditSec = (entryId) => {
+    const entry = security.find((m) => m.id === entryId)
     if (!entry) return
-    setEditingDay(entryId)
-    setDayIn(entry.in)
-    setDayOut(entry.out)
+    setEditingDaySec(entryId)
+    setDayInSec(entry.in)
+    setDayOutSec(entry.out)
   }
 
-  const saveDayEdit = () => {
-    if (!editingDay) return
-    setManual((prev) => prev.map((m) => (m.id === editingDay ? { ...m, in: dayIn, out: dayOut } : m)))
+  const saveDayEditSec = () => {
+    if (!editingDaySec) return
+    setSecurity((prev) => prev.map((m) => (m.id === editingDaySec ? { ...m, in: dayInSec, out: dayOutSec } : m)))
     toast.success('Jam kerja diperbarui')
-    setEditingDay(null)
+    setEditingDaySec(null)
   }
 
   return (
@@ -99,10 +143,12 @@ export default function Schedules() {
       <div className="flex gap-2 flex-wrap">
         <Button variant={tab === 'manual' ? 'primary' : 'outline'} size="sm" onClick={() => setTab('manual')}>Jadwal Guru & Staff</Button>
         <Button variant={tab === 'special' ? 'primary' : 'outline'} size="sm" onClick={() => setTab('special')}>Jadwal Khusus</Button>
-        <Button variant={tab === 'calendar' ? 'primary' : 'outline'} size="sm" onClick={() => setTab('calendar')}>Kalender</Button>
+        <Button variant={tab === 'security' ? 'primary' : 'outline'} size="sm" onClick={() => setTab('security')}>Jadwal Security</Button>
       </div>
 
+      {/* Jadwal Guru & Staff */}
       {tab === 'manual' && (
+        <>
         <Card className="p-5 space-y-4">
           <h3 className="font-semibold">Input Jadwal Kerja</h3>
           <div className="grid md:grid-cols-2 gap-3">
@@ -138,7 +184,7 @@ export default function Schedules() {
 
           {manual.length > 0 && (
             <div className="space-y-3 mt-3">
-              <div className="text-sm font-medium">Daftar Jadwal Manual (1 Pegawai 1 Minggu)</div>
+              <div className="text-sm font-medium">Daftar Jadwal (1 Pegawai 1 Minggu)</div>
               {Object.values(manual.reduce((acc, m) => {
                 if (!acc[m.employeeId]) acc[m.employeeId] = { name: m.name, entries: [] }
                 acc[m.employeeId].entries.push(m)
@@ -169,12 +215,27 @@ export default function Schedules() {
             </div>
           )}
         </Card>
+
+        {editingDay && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <div className="absolute inset-0 bg-black/40" onClick={() => setEditingDay(null)} />
+            <Card className="relative z-10 w-full max-w-sm p-5 space-y-3">
+              <h3 className="font-semibold">Edit Jam Kerja</h3>
+              <div><Label>Jam Masuk</Label><Input type="time" value={dayIn} onChange={(e) => setDayIn(e.target.value)} /></div>
+              <div><Label>Jam Pulang</Label><Input type="time" value={dayOut} onChange={(e) => setDayOut(e.target.value)} /></div>
+              <div className="flex gap-2">
+                <Button variant="outline" className="flex-1" onClick={() => setEditingDay(null)}>Batal</Button>
+                <Button className="flex-1" onClick={saveDayEdit}>Simpan</Button>
+              </div>
+            </Card>
+          </div>
+        )}
+        </>
       )}
 
-
-
+      {/* Jadwal Khusus */}
       {tab === 'special' && (
-        <> 
+        <>
         <Card className="p-5 space-y-4">
           <h3 className="font-semibold">Input Jadwal Kerja</h3>
           <div className="grid md:grid-cols-2 gap-3">
@@ -190,6 +251,14 @@ export default function Schedules() {
               <Select value={sForm.employeeId} onChange={(e) => setSForm({ ...sForm, employeeId: e.target.value })}>
                 <option value="">Pilih pegawai</option>
                 {employees.filter((e) => !posFilter || e.position === posFilter).map((e) => <option key={e.id} value={e.id}>{e.name} - {e.position}</option>)}
+              </Select>
+            </div>
+            <div>
+              <Label>Minggu</Label>
+              <Select value={sForm.week} onChange={(e) => setSForm({ ...sForm, week: e.target.value })}>
+                <option value="1">Minggu 1</option>
+                <option value="2">Minggu 2</option>
+                <option value="3">Minggu 3</option>
               </Select>
             </div>
             <div className="md:col-span-2">
@@ -210,33 +279,41 @@ export default function Schedules() {
 
           {special.length > 0 && (
             <div className="space-y-3 mt-3">
-              <div className="text-sm font-medium">Daftar Jadwal Khusus (1 Pegawai 1 Minggu)</div>
+              <div className="text-sm font-medium">Daftar Jadwal Khusus (1 Pegawai 3 Minggu Bergantian)</div>
               {Object.values(special.reduce((acc, m) => {
                 if (!acc[m.employeeId]) acc[m.employeeId] = { name: m.name, entries: [] }
                 acc[m.employeeId].entries.push(m)
                 return acc
               }, {})).map((g, i) => (
-                <Card key={i} className="p-3">
-                  <div className="flex items-center justify-between mb-1">
+                <div key={i} className="space-y-2">
+                  <div className="flex items-center justify-between">
                     <div className="font-medium">{g.name}</div>
                     <Button size="sm" variant="destructive" onClick={() => {
                       const ids = g.entries.map((e) => e.id)
                       setSpecial((prev) => prev.filter((m) => !ids.includes(m.id)))
                     }}>Hapus</Button>
                   </div>
-                  <div className="text-xs text-[var(--color-muted-foreground)] mb-2">1 minggu</div>
-                  <div className="grid grid-cols-7 gap-1 text-center text-xs">
-                    {['Sen','Sel','Rab','Kam','Jum','Sab','Min'].map((d) => {
-                      const hit = g.entries.find((e) => e.days.includes(d))
-                      return (
-                        <div key={d} onClick={() => hit && openDayEditS(hit.id)} className={`p-1 rounded ${hit ? 'bg-[var(--color-primary)] text-white cursor-pointer hover:opacity-80' : 'bg-[var(--color-muted)]'}`}>
-                          <div className="font-bold">{d}</div>
-                          <div className="text-[10px]">{hit ? `${hit.in}–${hit.out}` : '-'}</div>
+                  {[1,2,3].map((w) => {
+                    const weekEntries = g.entries.filter((e) => (e.week || 1) == w)
+                    if (weekEntries.length === 0) return null
+                    return (
+                      <Card key={w} className="p-3">
+                        <div className="text-xs text-[var(--color-muted-foreground)] mb-2">Minggu {w}</div>
+                        <div className="grid grid-cols-7 gap-1 text-center text-xs">
+                          {['Sen','Sel','Rab','Kam','Jum','Sab','Min'].map((d) => {
+                            const hit = weekEntries.find((e) => e.days.includes(d))
+                            return (
+                              <div key={d} onClick={() => hit && openDayEditS(hit.id)} className={`p-1 rounded ${hit ? 'bg-[var(--color-primary)] text-white cursor-pointer hover:opacity-80' : 'bg-[var(--color-muted)]'}`}>
+                                <div className="font-bold">{d}</div>
+                                <div className="text-[10px]">{hit ? `${hit.in}–${hit.out}` : '-'}</div>
+                              </div>
+                            )
+                          })}
                         </div>
-                      )
-                    })}
-                  </div>
-                </Card>
+                      </Card>
+                    )
+                  })}
+                </div>
               ))}
             </div>
           )}
@@ -259,34 +336,84 @@ export default function Schedules() {
         </>
       )}
 
-      {tab === 'calendar' && (
-        <Card className="p-5">
-          <h3 className="font-semibold mb-3 flex items-center gap-2"><CalendarDays size={16} /> Kalender Jadwal</h3>
-          <div className="grid grid-cols-7 gap-1 text-center text-xs">
-            {['Sen','Sel','Rab','Kam','Jum','Sab','Min'].map((d) => <div key={d} className="font-bold py-1">{d}</div>)}
-            {Array.from({ length: 35 }).map((_, i) => (
-              <div key={i} className="aspect-square border border-[var(--color-border)] rounded-lg flex items-center justify-center hover:bg-[var(--color-muted)] cursor-pointer">
-                {(i % 30) + 1}
-              </div>
-            ))}
-          </div>
-          <p className="text-xs text-[var(--color-muted-foreground)] mt-3">Klik tanggal untuk mengedit/menutup jadwal piket & hari libur.</p>
-        </Card>
-      )}
-
-      {editingDay && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-black/40" onClick={() => setEditingDay(null)} />
-          <Card className="relative z-10 w-full max-w-sm p-5 space-y-3">
-            <h3 className="font-semibold">Edit Jam Kerja</h3>
-            <div><Label>Jam Masuk</Label><Input type="time" value={dayIn} onChange={(e) => setDayIn(e.target.value)} /></div>
-            <div><Label>Jam Pulang</Label><Input type="time" value={dayOut} onChange={(e) => setDayOut(e.target.value)} /></div>
-            <div className="flex gap-2">
-              <Button variant="outline" className="flex-1" onClick={() => setEditingDay(null)}>Batal</Button>
-              <Button className="flex-1" onClick={saveDayEdit}>Simpan</Button>
+      {/* Jadwal Security */}
+      {tab === 'security' && (
+        <>
+        <Card className="p-5 space-y-4">
+          <h3 className="font-semibold">Input Jadwal Kerja</h3>
+          <div className="grid md:grid-cols-2 gap-3">
+            <div>
+              <Label>Pegawai (Security)</Label>
+              <Select value={secForm.employeeId} onChange={(e) => setSecForm({ ...secForm, employeeId: e.target.value })}>
+                <option value="">Pilih pegawai</option>
+                {employees.filter((e) => e.position === 'Security' || e.scheduleGroup === 'security').map((e) => <option key={e.id} value={e.id}>{e.name} - {e.position}</option>)}
+              </Select>
             </div>
-          </Card>
-        </div>
+            <div className="md:col-span-2">
+              <Label>Hari Kerja</Label>
+              <div className="flex flex-wrap gap-2 mt-1">
+                {['Sen','Sel','Rab','Kam','Jum','Sab','Min'].map((d) => (
+                  <label key={d} className="flex items-center gap-1 text-sm">
+                    <input type="checkbox" checked={secForm.days.includes(d)} onChange={() => toggleDaySec(d)} />
+                    {d}
+                  </label>
+                ))}
+              </div>
+            </div>
+            <div><Label>Jam Masuk</Label><Input type="time" value={secForm.in} onChange={(e) => setSecForm({ ...secForm, in: e.target.value })} /></div>
+            <div><Label>Jam Pulang</Label><Input type="time" value={secForm.out} onChange={(e) => setSecForm({ ...secForm, out: e.target.value })} /></div>
+          </div>
+          <Button onClick={saveSecurity}>Simpan Jadwal Security</Button>
+
+          {security.length > 0 && (
+            <div className="space-y-3 mt-3">
+              <div className="text-sm font-medium">Daftar Jadwal Security (1 Pegawai 1 Minggu)</div>
+              {Object.values(security.reduce((acc, m) => {
+                if (!acc[m.employeeId]) acc[m.employeeId] = { name: m.name, entries: [] }
+                acc[m.employeeId].entries.push(m)
+                return acc
+              }, {})).map((g, i) => (
+                <Card key={i} className="p-3">
+                  <div className="flex items-center justify-between mb-1">
+                    <div className="font-medium">{g.name}</div>
+                    <Button size="sm" variant="destructive" onClick={() => {
+                      const ids = g.entries.map((e) => e.id)
+                      setSecurity((prev) => prev.filter((m) => !ids.includes(m.id)))
+                    }}>Hapus</Button>
+                  </div>
+                  <div className="text-xs text-[var(--color-muted-foreground)] mb-2">1 minggu</div>
+                  <div className="grid grid-cols-7 gap-1 text-center text-xs">
+                    {['Sen','Sel','Rab','Kam','Jum','Sab','Min'].map((d) => {
+                      const hit = g.entries.find((e) => e.days.includes(d))
+                      return (
+                        <div key={d} onClick={() => hit && openDayEditSec(hit.id)} className={`p-1 rounded ${hit ? 'bg-[var(--color-primary)] text-white cursor-pointer hover:opacity-80' : 'bg-[var(--color-muted)]'}`}>
+                          <div className="font-bold">{d}</div>
+                          <div className="text-[10px]">{hit ? `${hit.in}–${hit.out}` : '-'}</div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                </Card>
+              ))}
+            </div>
+          )}
+        </Card>
+
+        {editingDaySec && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <div className="absolute inset-0 bg-black/40" onClick={() => setEditingDaySec(null)} />
+            <Card className="relative z-10 w-full max-w-sm p-5 space-y-3">
+              <h3 className="font-semibold">Edit Jam Kerja</h3>
+              <div><Label>Jam Masuk</Label><Input type="time" value={dayInSec} onChange={(e) => setDayInSec(e.target.value)} /></div>
+              <div><Label>Jam Pulang</Label><Input type="time" value={dayOutSec} onChange={(e) => setDayOutSec(e.target.value)} /></div>
+              <div className="flex gap-2">
+                <Button variant="outline" className="flex-1" onClick={() => setEditingDaySec(null)}>Batal</Button>
+                <Button className="flex-1" onClick={saveDayEditSec}>Simpan</Button>
+              </div>
+            </Card>
+          </div>
+        )}
+        </>
       )}
     </div>
   )
