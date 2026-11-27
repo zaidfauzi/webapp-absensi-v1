@@ -1,6 +1,6 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useApp } from '../context/AppContext'
-import { Card, Button, Badge, Select } from '../components/ui'
+import { Card, Button, Badge, Select, Input, Label } from '../components/ui'
 import { CalendarDays, RefreshCw } from 'lucide-react'
 import { toast } from 'sonner'
 
@@ -29,8 +29,30 @@ const templates = [
 
 export default function Schedules() {
   const { employees } = useApp()
-  const [tab, setTab] = useState('template')
+  const [tab, setTab] = useState('manual')
   const [rotation, setRotation] = useState('auto')
+  const [manual, setManual] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('manualSchedules') || '[]') } catch { return [] }
+  })
+  const [mForm, setMForm] = useState({ employeeId: '', days: [], in: '06:55', out: '15:00' })
+
+  useEffect(() => { localStorage.setItem('manualSchedules', JSON.stringify(manual)) }, [manual])
+
+  const guruStaff = employees.filter((e) => e.scheduleGroup === 'guru' || ['Guru','Staff TU'].includes(e.position))
+
+  const toggleDay = (d) => setMForm((f) => ({
+    ...f, days: f.days.includes(d) ? f.days.filter((x) => x !== d) : [...f.days, d]
+  }))
+
+  const saveManual = () => {
+    if (!mForm.employeeId || mForm.days.length === 0) { toast.error('Pilih pegawai dan hari kerja'); return }
+    const emp = employees.find((e) => e.id === mForm.employeeId)
+    setManual((prev) => [...prev, { id: 'ms-' + Date.now(), employeeId: mForm.employeeId, name: emp?.name, days: mForm.days, in: mForm.in, out: mForm.out }])
+    setMForm({ employeeId: '', days: [], in: '06:55', out: '15:00' })
+    toast.success('Jadwal manual disimpan')
+  }
+
+  const removeManual = (id) => setManual((prev) => prev.filter((m) => m.id !== id))
 
   return (
     <div className="space-y-6">
@@ -39,28 +61,54 @@ export default function Schedules() {
         <p className="text-sm text-[var(--color-muted-foreground)]">Pengaturan jam kerja dinamis per kategori</p>
       </div>
 
-      <div className="flex gap-2">
-        <Button variant={tab === 'template' ? 'primary' : 'outline'} size="sm" onClick={() => setTab('template')}>Template Shift</Button>
+      <div className="flex gap-2 flex-wrap">
+        <Button variant={tab === 'manual' ? 'primary' : 'outline'} size="sm" onClick={() => setTab('manual')}>Jadwal Manual</Button>
         <Button variant={tab === 'rotation' ? 'primary' : 'outline'} size="sm" onClick={() => setTab('rotation')}>Rotasi Otomatis</Button>
         <Button variant={tab === 'calendar' ? 'primary' : 'outline'} size="sm" onClick={() => setTab('calendar')}>Kalender</Button>
       </div>
 
-      {tab === 'template' && (
-        <div className="grid md:grid-cols-2 gap-4">
-          {templates.map((t) => (
-            <Card key={t.group} className="p-4">
-              <h3 className="font-semibold mb-3">{t.group}</h3>
-              <div className="space-y-2">
-                {t.items.map((it, i) => (
-                  <div key={i} className="flex justify-between text-sm border-b border-[var(--color-border)] pb-1">
-                    <span>{it.hari}</span>
-                    <span className="font-mono text-[var(--color-muted-foreground)]">{it.jam}</span>
-                  </div>
+      {tab === 'manual' && (
+        <Card className="p-5 space-y-4">
+          <h3 className="font-semibold">Jadwal Manual Guru & Staff (Per Individu)</h3>
+          <div className="grid md:grid-cols-2 gap-3">
+            <div>
+              <Label>Pegawai (Guru/Staff)</Label>
+              <Select value={mForm.employeeId} onChange={(e) => setMForm({ ...mForm, employeeId: e.target.value })}>
+                <option value="">Pilih pegawai</option>
+                {guruStaff.map((e) => <option key={e.id} value={e.id}>{e.name} - {e.position}</option>)}
+              </Select>
+            </div>
+            <div>
+              <Label>Hari Kerja</Label>
+              <div className="flex flex-wrap gap-2 mt-1">
+                {['Sen','Sel','Rab','Kam','Jum','Sab'].map((d) => (
+                  <label key={d} className="flex items-center gap-1 text-sm">
+                    <input type="checkbox" checked={mForm.days.includes(d)} onChange={() => toggleDay(d)} />
+                    {d}
+                  </label>
                 ))}
               </div>
-            </Card>
-          ))}
-        </div>
+            </div>
+            <div><Label>Jam Masuk</Label><Input type="time" value={mForm.in} onChange={(e) => setMForm({ ...mForm, in: e.target.value })} /></div>
+            <div><Label>Jam Pulang</Label><Input type="time" value={mForm.out} onChange={(e) => setMForm({ ...mForm, out: e.target.value })} /></div>
+          </div>
+          <Button onClick={saveManual}>Simpan Jadwal Manual</Button>
+
+          {manual.length > 0 && (
+            <div className="space-y-2 mt-3">
+              <div className="text-sm font-medium">Daftar Jadwal Manual</div>
+              {manual.map((m) => (
+                <div key={m.id} className="flex items-center justify-between p-3 rounded-xl bg-[var(--color-muted)] text-sm">
+                  <div>
+                    <div className="font-medium">{m.name}</div>
+                    <div className="text-xs text-[var(--color-muted-foreground)]">{m.days.join(', ')} · {m.in} – {m.out}</div>
+                  </div>
+                  <Button size="sm" variant="destructive" onClick={() => removeManual(m.id)}>Hapus</Button>
+                </div>
+              ))}
+            </div>
+          )}
+        </Card>
       )}
 
       {tab === 'rotation' && (
