@@ -4,29 +4,6 @@ import { Card, Button, Badge, Select, Input, Label } from '../components/ui'
 import { CalendarDays, RefreshCw } from 'lucide-react'
 import { toast } from 'sonner'
 
-const templates = [
-  { group: 'Guru & Staff', items: [
-    { hari: 'Senin–Kamis (Normal)', jam: '06:55 – 15:00' },
-    { hari: 'Piket (1x/minggu)', jam: '06:30 – 15:30' },
-    { hari: 'Piket Jumat', jam: '06:30 – 13:30' },
-    { hari: 'Jumat & Sabtu (Non-piket)', jam: '06:55 – 11:30' },
-  ]},
-  { group: 'Office Boy', items: [
-    { hari: '2 minggu normal', jam: '06:00 – 16:00' },
-    { hari: '1 minggu piket', jam: '06:00 – 17:00' },
-    { hari: 'Rotasi', jam: 'pola 2-1 bergilir (termasuk Sabtu & Minggu)' },
-  ]},
-  { group: 'Teknisi & Gardener', items: [
-    { hari: '1 minggu normal', jam: '06:00 – 16:00' },
-    { hari: '1 minggu piket', jam: '06:00 – 17:00' },
-    { hari: 'Rotasi', jam: 'pola 1-1 bergilir' },
-  ]},
-  { group: 'Security', items: [
-    { hari: 'Shift Pagi', jam: '05:55 – 17:00' },
-    { hari: 'Shift Malam (lintas hari)', jam: '16:55 (H) – 06:00 (H+1)' },
-  ]},
-]
-
 export default function Schedules() {
   const { employees } = useApp()
   const [tab, setTab] = useState('manual')
@@ -53,6 +30,8 @@ export default function Schedules() {
   }
 
   const removeManual = (id) => setManual((prev) => prev.filter((m) => m.id !== id))
+
+  const clearManual = () => { setManual([]); localStorage.removeItem('manualSchedules'); toast.success('Data jadwal manual dikosongkan') }
 
   return (
     <div className="space-y-6">
@@ -95,16 +74,34 @@ export default function Schedules() {
           <Button onClick={saveManual}>Simpan Jadwal Manual</Button>
 
           {manual.length > 0 && (
-            <div className="space-y-2 mt-3">
-              <div className="text-sm font-medium">Daftar Jadwal Manual</div>
-              {manual.map((m) => (
-                <div key={m.id} className="flex items-center justify-between p-3 rounded-xl bg-[var(--color-muted)] text-sm">
-                  <div>
-                    <div className="font-medium">{m.name}</div>
-                    <div className="text-xs text-[var(--color-muted-foreground)]">{m.days.join(', ')} · {m.in} – {m.out}</div>
+            <div className="space-y-3 mt-3">
+              <div className="text-sm font-medium">Daftar Jadwal Manual (1 Pegawai 1 Minggu)</div>
+              {Object.values(manual.reduce((acc, m) => {
+                if (!acc[m.employeeId]) acc[m.employeeId] = { name: m.name, entries: [] }
+                acc[m.employeeId].entries.push(m)
+                return acc
+              }, {})).map((g, i) => (
+                <Card key={i} className="p-3">
+                  <div className="flex items-center justify-between mb-1">
+                    <div className="font-medium">{g.name}</div>
+                    <Button size="sm" variant="destructive" onClick={() => {
+                      const ids = g.entries.map((e) => e.id)
+                      setManual((prev) => prev.filter((m) => !ids.includes(m.id)))
+                    }}>Hapus</Button>
                   </div>
-                  <Button size="sm" variant="destructive" onClick={() => removeManual(m.id)}>Hapus</Button>
-                </div>
+                  <div className="text-xs text-[var(--color-muted-foreground)] mb-2">1 minggu</div>
+                  <div className="grid grid-cols-7 gap-1 text-center text-xs">
+                    {['Sen','Sel','Rab','Kam','Jum','Sab','Min'].map((d) => {
+                      const hit = g.entries.find((e) => e.days.includes(d))
+                      return (
+                        <div key={d} className={`p-1 rounded ${hit ? 'bg-[var(--color-primary)] text-white' : 'bg-[var(--color-muted)]'}`}>
+                          <div className="font-bold">{d}</div>
+                          <div className="text-[10px]">{hit ? `${hit.in}–${hit.out}` : '-'}</div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                </Card>
               ))}
             </div>
           )}
