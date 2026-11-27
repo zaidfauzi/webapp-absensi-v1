@@ -31,7 +31,24 @@ export default function Schedules() {
 
   const removeManual = (id) => setManual((prev) => prev.filter((m) => m.id !== id))
 
-  const clearManual = () => { setManual([]); localStorage.removeItem('manualSchedules'); toast.success('Data jadwal manual dikosongkan') }
+  const [editingDay, setEditingDay] = useState(null)
+  const [dayIn, setDayIn] = useState('')
+  const [dayOut, setDayOut] = useState('')
+
+  const openDayEdit = (entryId) => {
+    const entry = manual.find((m) => m.id === entryId)
+    if (!entry) return
+    setEditingDay(entryId)
+    setDayIn(entry.in)
+    setDayOut(entry.out)
+  }
+
+  const saveDayEdit = () => {
+    if (!editingDay) return
+    setManual((prev) => prev.map((m) => (m.id === editingDay ? { ...m, in: dayIn, out: dayOut } : m)))
+    toast.success('Jam kerja diperbarui')
+    setEditingDay(null)
+  }
 
   return (
     <div className="space-y-6">
@@ -94,7 +111,7 @@ export default function Schedules() {
                     {['Sen','Sel','Rab','Kam','Jum','Sab','Min'].map((d) => {
                       const hit = g.entries.find((e) => e.days.includes(d))
                       return (
-                        <div key={d} className={`p-1 rounded ${hit ? 'bg-[var(--color-primary)] text-white' : 'bg-[var(--color-muted)]'}`}>
+                        <div key={d} onClick={() => hit && openDayEdit(hit.id)} className={`p-1 rounded ${hit ? 'bg-[var(--color-primary)] text-white cursor-pointer hover:opacity-80' : 'bg-[var(--color-muted)]'}`}>
                           <div className="font-bold">{d}</div>
                           <div className="text-[10px]">{hit ? `${hit.in}–${hit.out}` : '-'}</div>
                         </div>
@@ -145,6 +162,21 @@ export default function Schedules() {
           </div>
           <p className="text-xs text-[var(--color-muted-foreground)] mt-3">Klik tanggal untuk mengedit/menutup jadwal piket & hari libur.</p>
         </Card>
+      )}
+
+      {editingDay && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/40" onClick={() => setEditingDay(null)} />
+          <Card className="relative z-10 w-full max-w-sm p-5 space-y-3">
+            <h3 className="font-semibold">Edit Jam Kerja</h3>
+            <div><Label>Jam Masuk</Label><Input type="time" value={dayIn} onChange={(e) => setDayIn(e.target.value)} /></div>
+            <div><Label>Jam Pulang</Label><Input type="time" value={dayOut} onChange={(e) => setDayOut(e.target.value)} /></div>
+            <div className="flex gap-2">
+              <Button variant="outline" className="flex-1" onClick={() => setEditingDay(null)}>Batal</Button>
+              <Button className="flex-1" onClick={saveDayEdit}>Simpan</Button>
+            </div>
+          </Card>
+        </div>
       )}
     </div>
   )
