@@ -76,10 +76,19 @@ export default function Attendance() {
     toast.success('Foto tercapture dengan watermark')
     // face recognition
     setFaceMsg('Memverifikasi wajah...')
-    const desc = await getFaceDescriptor(v)
-    setCapturedFaceDescriptor(desc)
-    if (desc) setFaceMsg('Wajah terdeteksi')
-    else setFaceMsg('Wajah tidak terdeteksi')
+    try {
+      if (v.readyState < 2) {
+        await new Promise((res) => { v.onloadeddata = () => res(); setTimeout(res, 2000) })
+      }
+      const desc = await getFaceDescriptor(v)
+      setCapturedFaceDescriptor(desc)
+      if (desc) setFaceMsg('Wajah terdeteksi')
+      else setFaceMsg('Wajah tidak terdeteksi')
+    } catch (e) {
+      console.error(e)
+      setCapturedFaceDescriptor(null)
+      setFaceMsg('Gagal verifikasi wajah: ' + e.message)
+    }
   }
 
   const distance = pos ? haversine(pos.lat, pos.lng, settings.lat, settings.lng) : null
@@ -93,9 +102,14 @@ export default function Attendance() {
     if (!inRadius) { toast.error(`Di luar radius (${Math.round(distance)}m > ${settings.radius}m)`); return }
     if (settings.antiFakeGps && fakeGpsSuspect) { toast.error('Terdeteksi indikasi Fake GPS'); return }
     if (emp?.faceDescriptor) {
-      if (!capturedFaceDescriptor) { toast.error('Wajah tidak terdeteksi'); return }
-      const dist = faceDistance(capturedFaceDescriptor, emp.faceDescriptor)
-      if (dist > 0.6) { toast.error('Wajah tidak cocok dengan data pegawai'); return }
+      try {
+        if (!capturedFaceDescriptor) { toast.error('Wajah tidak terdeteksi'); return }
+        const dist = faceDistance(capturedFaceDescriptor, emp.faceDescriptor)
+        if (dist > 0.6) { toast.error('Wajah tidak cocok dengan data pegawai'); return }
+      } catch (e) {
+        console.warn('Face verification error, melanjutkan absen', e)
+        toast.warning('Verifikasi wajah gagal, absen tetap diproses')
+      }
     }
 
     setLoading(true)
