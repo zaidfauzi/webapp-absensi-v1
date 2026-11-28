@@ -10,6 +10,10 @@ import { toast } from 'sonner'
 export default function Attendance() {
   const { currentUser, employees, settings, checkIn, checkOut, attendances, login } = useApp()
   const navigate = useNavigate()
+  const goBack = () => {
+    if (currentUser?.role === 'pegawai') navigate('/leave')
+    else navigate('/')
+  }
   const [qUser, setQUser] = useState('')
   const [qPass, setQPass] = useState('')
   const [qLoading, setQLoading] = useState(false)
@@ -137,7 +141,7 @@ export default function Attendance() {
   if (!currentUser) {
     return (
       <div className="space-y-6 max-w-md mx-auto">
-        <Button variant="outline" size="sm" onClick={() => navigate(-1)}>← Kembali</Button>
+        <Button variant="outline" size="sm" onClick={goBack}>← Kembali</Button>
         <div>
           <h1 className="text-2xl font-bold">Absen Cepat</h1>
           <p className="text-sm text-[var(--color-muted-foreground)]">Masuk dengan akun Anda untuk melanjutkan absensi</p>
@@ -160,7 +164,7 @@ export default function Attendance() {
 
   return (
     <div className="space-y-6 max-w-2xl mx-auto">
-      <Button variant="outline" size="sm" onClick={() => navigate(-1)}>← Kembali</Button>
+      <Button variant="outline" size="sm" onClick={goBack}>← Kembali</Button>
       <div>
         <h1 className="text-2xl font-bold">Absensi Rekam Wajah</h1>
         <p className="text-sm text-[var(--color-muted-foreground)]">Verifikasi lokasi & wajah sebelum absen</p>
