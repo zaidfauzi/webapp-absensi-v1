@@ -17,7 +17,7 @@ function ClickHandler({ onPick }) {
 
 export default function Settings() {
   const { settings, updateSettings } = useApp()
-  const [form, setForm] = useState({ ...settings })
+  const [form, setForm] = useState({ ...settings, lat: (settings.lat ?? -6.9175), lng: (settings.lng ?? 107.6191) })
 
   const save = () => {
     updateSettings(form)
@@ -60,8 +60,8 @@ export default function Settings() {
       <Card className="p-5 space-y-3">
         <h3 className="font-semibold">Konfigurasi Absensi & Lokasi</h3>
         <div className="grid md:grid-cols-3 gap-3">
-          <div><Label>Latitude</Label><Input type="number" step="any" value={form.lat} onChange={(e) => setForm({ ...form, lat: parseFloat(e.target.value) })} /></div>
-          <div><Label>Longitude</Label><Input type="number" step="any" value={form.lng} onChange={(e) => setForm({ ...form, lng: parseFloat(e.target.value) })} /></div>
+          <div><Label>Latitude</Label><Input type="number" step="any" value={form.lat} onChange={(e) => { const v = parseFloat(e.target.value); if (!isNaN(v)) setForm({ ...form, lat: v }) }} /></div>
+          <div><Label>Longitude</Label><Input type="number" step="any" value={form.lng} onChange={(e) => { const v = parseFloat(e.target.value); if (!isNaN(v)) setForm({ ...form, lng: v }) }} /></div>
           <div className="md:col-span-3">
             <Button type="button" onClick={() => {
               if (!navigator.geolocation) { toast.error('Geolocation tidak didukung'); return }
@@ -87,7 +87,7 @@ export default function Settings() {
           </div>
         </div>
         <div className="h-64 rounded-xl overflow-hidden border border-[var(--color-border)] mt-3">
-          <MapContainer key={`${form.lat}-${form.lng}`} center={[form.lat, form.lng]} zoom={16} style={{ height: '100%', width: '100%' }}>
+          <MapContainer key={`${form.lat}-${form.lng}`} center={[Number(form.lat) || -6.9175, Number(form.lng) || 107.6191]} zoom={16} style={{ height: '100%', width: '100%' }}>
             <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
             <Marker position={[form.lat, form.lng]} />
             <ClickHandler onPick={(lat, lng) => setForm({ ...form, lat, lng })} />
