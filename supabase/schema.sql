@@ -1,6 +1,7 @@
 -- Schema for SDIT Absensi & Monitoring Kedisiplinan
--- Run in Supabase SQL Editor
+-- Jalankan di Supabase SQL Editor (sekali) lalu seed.sql (opsional)
 
+-- Tabel
 create table if not exists system_settings (
   id int primary key default 1,
   school_name text,
@@ -87,13 +88,20 @@ alter table users enable row level security;
 alter table attendances enable row level security;
 alter table leave_requests enable row level security;
 
--- Basic policies (permissive for demo; tighten in production)
-create policy "public read settings" on system_settings for select using (true);
-create policy "public all employees" on employees for all using (true) with check (true);
-create policy "public all users" on users for all using (true) with check (true);
-create policy "public all attendances" on attendances for all using (true) with check (true);
-create policy "public all leave" on leave_requests for all using (true) with check (true);
-create policy "public update settings" on system_settings for all using (true) with check (true);
+-- Hak akses (demo: permissive; ketatkan untuk produksi)
+grant usage on schema public to anon, authenticated;
+grant select, insert, update, delete on public.system_settings to anon, authenticated;
+grant select, insert, update, delete on public.employees to anon, authenticated;
+grant select, insert, update, delete on public.users to anon, authenticated;
+grant select, insert, update, delete on public.attendances to anon, authenticated;
+grant select, insert, update, delete on public.leave_requests to anon, authenticated;
+
+-- Policy demo
+do $$ begin create policy "anon all settings" on public.system_settings for all using (true) with check (true); exception when duplicate_object then null; end $$;
+do $$ begin create policy "anon all employees" on public.employees for all using (true) with check (true); exception when duplicate_object then null; end $$;
+do $$ begin create policy "anon all users" on public.users for all using (true) with check (true); exception when duplicate_object then null; end $$;
+do $$ begin create policy "anon all attendances" on public.attendances for all using (true) with check (true); exception when duplicate_object then null; end $$;
+do $$ begin create policy "anon all leave" on public.leave_requests for all using (true) with check (true); exception when duplicate_object then null; end $$;
 
 -- seed settings row
 insert into system_settings (id) values (1) on conflict (id) do nothing;
