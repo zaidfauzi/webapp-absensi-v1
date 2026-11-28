@@ -22,9 +22,14 @@ export default function Reports() {
   const [from, setFrom] = useState(new Date().toISOString().slice(0, 10))
   const [to, setTo] = useState(new Date().toISOString().slice(0, 10))
   const [empId, setEmpId] = useState('all')
+  const [posFilter, setPosFilter] = useState('all')
 
   const buildRows = () => {
     let atts = attendances.filter((a) => a.date >= from && a.date <= to)
+    if (posFilter !== 'all') atts = atts.filter((a) => {
+      const e = employees.find((x) => x.id === a.employeeId)
+      return e?.position === posFilter
+    })
     if (empId !== 'all') atts = atts.filter((a) => a.employeeId === empId)
     return atts.map((a) => {
       const e = employees.find((x) => x.id === a.employeeId)
@@ -128,13 +133,19 @@ export default function Reports() {
         <p className="text-sm text-[var(--color-muted-foreground)]">Ekspor Excel, CSV, PDF dengan kop surat</p>
       </div>
       <Card className="p-5 space-y-4">
-        <div className="grid md:grid-cols-3 gap-3">
+        <div className="grid md:grid-cols-4 gap-3">
           <div><Label>Dari</Label><Input type="date" value={from} onChange={(e) => setFrom(e.target.value)} /></div>
           <div><Label>Sampai</Label><Input type="date" value={to} onChange={(e) => setTo(e.target.value)} /></div>
+          <div><Label>Jabatan</Label>
+            <Select value={posFilter} onChange={(e) => { setPosFilter(e.target.value); setEmpId('all') }}>
+              <option value="all">Semua Jabatan</option>
+              {Array.from(new Set(employees.map((e) => e.position))).map((p) => <option key={p} value={p}>{p}</option>)}
+            </Select>
+          </div>
           <div><Label>Pegawai</Label>
             <Select value={empId} onChange={(e) => setEmpId(e.target.value)}>
               <option value="all">Semua</option>
-              {employees.map((e) => <option key={e.id} value={e.id}>{e.name}</option>)}
+              {employees.filter((e) => posFilter === 'all' || e.position === posFilter).map((e) => <option key={e.id} value={e.id}>{e.name}</option>)}
             </Select>
           </div>
         </div>
