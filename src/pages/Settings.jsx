@@ -62,6 +62,19 @@ export default function Settings() {
         <div className="grid md:grid-cols-3 gap-3">
           <div><Label>Latitude</Label><Input type="number" step="any" value={form.lat} onChange={(e) => setForm({ ...form, lat: parseFloat(e.target.value) })} /></div>
           <div><Label>Longitude</Label><Input type="number" step="any" value={form.lng} onChange={(e) => setForm({ ...form, lng: parseFloat(e.target.value) })} /></div>
+          <div className="md:col-span-3">
+            <Button type="button" onClick={() => {
+              if (!navigator.geolocation) { toast.error('Geolocation tidak didukung'); return }
+              navigator.geolocation.getCurrentPosition(
+                (p) => {
+                  setForm((f) => ({ ...f, lat: p.coords.latitude, lng: p.coords.longitude }))
+                  toast.success(`Posisi terdeteksi (akurasi ±${Math.round(p.coords.accuracy)}m)`)
+                },
+                (e) => toast.error('Gagal mendapatkan lokasi: ' + e.message),
+                { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
+              )
+            }}>Gunakan Posisi Saat Ini (GPS Akurat)</Button>
+          </div>
           <div><Label>Radius (m)</Label><Input type="number" value={form.radius} onChange={(e) => setForm({ ...form, radius: parseInt(e.target.value) })} /></div>
           <div><Label>Toleransi Telat (mnt)</Label><Input type="number" value={form.toleranceMinutes} onChange={(e) => setForm({ ...form, toleranceMinutes: parseInt(e.target.value) })} /></div>
           <div className="flex items-center gap-2 mt-6">
@@ -74,7 +87,7 @@ export default function Settings() {
           </div>
         </div>
         <div className="h-64 rounded-xl overflow-hidden border border-[var(--color-border)] mt-3">
-          <MapContainer center={[form.lat, form.lng]} zoom={16} style={{ height: '100%', width: '100%' }}>
+          <MapContainer key={`${form.lat}-${form.lng}`} center={[form.lat, form.lng]} zoom={16} style={{ height: '100%', width: '100%' }}>
             <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
             <Marker position={[form.lat, form.lng]} />
             <ClickHandler onPick={(lat, lng) => setForm({ ...form, lat, lng })} />
