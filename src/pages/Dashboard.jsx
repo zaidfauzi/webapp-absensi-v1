@@ -1,12 +1,10 @@
-import { useState } from 'react'
 import { useApp } from '../context/AppContext'
-import { Card, Badge, Input } from '../components/ui'
+import { Card, Badge } from '../components/ui'
 import { Users, CheckCircle2, XCircle, Clock, LogOut as Out, Award, TrendingUp } from 'lucide-react'
 import { avatarUrl } from '../lib/mockData'
 
 export default function Dashboard() {
   const { employees, attendances, settings } = useApp()
-  const [chartDate, setChartDate] = useState(new Date().toISOString().slice(0, 10))
   const today = new Date().toISOString().slice(0, 10)
   const todayAtt = attendances.filter((a) => a.date === today)
   const total = employees.length
@@ -33,14 +31,6 @@ export default function Dashboard() {
     return { e, late, present, score: present * 10 - late }
   }).sort((a, b) => b.score - a.score)
   const eom = score[0]
-
-  const chartAtt = attendances.filter((a) => a.date === chartDate)
-  const chartHadir = chartAtt.filter((a) => a.checkIn).length
-  const chartTerlambat = chartAtt.filter((a) => a.status === 'terlambat').length
-  const chartIzinSakit = chartAtt.filter((a) => ['izin','sakit'].includes(a.status)).length
-  const chartAlpha = Math.max(0, employees.length - chartHadir - chartIzinSakit)
-  const chartPulangCepat = chartAtt.filter((a) => (a.earlyLeaveMinutes || 0) > 0).length
-  const chartMax = Math.max(chartHadir, chartTerlambat, chartIzinSakit, chartAlpha, chartPulangCepat, 1)
 
   const kpis = [
     { label: 'Total Pegawai', value: total, icon: Users, color: 'text-blue-600', bg: 'bg-blue-100 dark:bg-blue-900/40' },
@@ -73,19 +63,17 @@ export default function Dashboard() {
       </div>
 
       <Card className="p-4">
-        <div className="flex items-center justify-between mb-3">
-          <h3 className="font-semibold">Diagram Absensi</h3>
-          <Input type="date" value={chartDate} onChange={(e) => setChartDate(e.target.value)} className="w-40" />
-        </div>
+        <h3 className="font-semibold mb-3">Diagram Absensi Hari Ini</h3>
         <div className="flex items-end gap-3 h-40">
           {[
-            { label: 'Hadir', value: chartHadir, color: 'bg-emerald-500' },
-            { label: 'Terlambat', value: chartTerlambat, color: 'bg-amber-500' },
-            { label: 'Izin/Sakit', value: chartIzinSakit, color: 'bg-blue-500' },
-            { label: 'Alpha', value: chartAlpha, color: 'bg-red-500' },
-            { label: 'Pulang Cepat', value: chartPulangCepat, color: 'bg-purple-500' },
+            { label: 'Hadir', value: hadir, color: 'bg-emerald-500' },
+            { label: 'Terlambat', value: terlambat, color: 'bg-amber-500' },
+            { label: 'Izin/Sakit', value: izinSakit, color: 'bg-blue-500' },
+            { label: 'Alpha', value: alpha, color: 'bg-red-500' },
+            { label: 'Pulang Cepat', value: pulangCepat, color: 'bg-purple-500' },
           ].map((d) => {
-            const h = Math.round((d.value / chartMax) * 100)
+            const max = Math.max(hadir, terlambat, izinSakit, alpha, pulangCepat, 1)
+            const h = Math.round((d.value / max) * 100)
             return (
               <div key={d.label} className="flex-1 flex flex-col items-center gap-1">
                 <div className="text-xs font-medium">{d.value}</div>
