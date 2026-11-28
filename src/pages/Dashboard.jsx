@@ -98,31 +98,6 @@ export default function Dashboard() {
         ))}
       </div>
 
-      <Card className="p-4">
-        <h3 className="font-semibold mb-3">Diagram Absensi Hari Ini</h3>
-        <div className="flex items-end gap-3 h-40">
-          {[
-            { label: 'Hadir', value: hadir, color: 'bg-emerald-500' },
-            { label: 'Terlambat', value: terlambat, color: 'bg-amber-500' },
-            { label: 'Izin/Sakit', value: izinSakit, color: 'bg-blue-500' },
-            { label: 'Alpha', value: alpha, color: 'bg-red-500' },
-            { label: 'Pulang Cepat', value: pulangCepat, color: 'bg-purple-500' },
-          ].map((d) => {
-            const max = Math.max(hadir, terlambat, izinSakit, alpha, pulangCepat, 1)
-            const h = Math.round((d.value / max) * 100)
-            return (
-              <div key={d.label} className="flex-1 flex flex-col items-center gap-1">
-                <div className="text-xs font-medium">{d.value}</div>
-                <div className="w-full bg-[var(--color-muted)] rounded-t-lg overflow-hidden" style={{ height: '100%' }}>
-                  <div className={`${d.color} w-full rounded-t-lg transition-all`} style={{ height: `${h}%`, marginTop: `${100 - h}%` }} />
-                </div>
-                <div className="text-[10px] text-[var(--color-muted-foreground)] text-center">{d.label}</div>
-              </div>
-            )
-          })}
-        </div>
-      </Card>
-
       <div className="grid md:grid-cols-2 gap-4">
         <Card className="p-4">
           <h3 className="font-semibold mb-3 flex items-center gap-2"><Clock size={16} className="text-amber-600" /> Pegawai Terlambat</h3>
