@@ -58,21 +58,6 @@ export default function Settings() {
       </Card>
 
       <Card className="p-5 space-y-3">
-        <h3 className="font-semibold">Tampilan Aplikasi</h3>
-        <div className="grid md:grid-cols-2 gap-3">
-          <div><Label>Tema Bawaan</Label>
-            <Select value={form.themeDefault} onChange={(e) => setForm({ ...form, themeDefault: e.target.value })}>
-              <option value="light">Terang</option><option value="dark">Gelap</option>
-            </Select>
-          </div>
-          <div className="flex items-center gap-2 mt-6">
-            <input type="checkbox" checked={form.allowUserTheme} onChange={(e) => setForm({ ...form, allowUserTheme: e.target.checked })} />
-            <span className="text-sm">Izinkan pengguna memilih tema sendiri</span>
-          </div>
-        </div>
-      </Card>
-
-      <Card className="p-5 space-y-3">
         <h3 className="font-semibold">Konfigurasi Absensi & Lokasi</h3>
         <div className="grid md:grid-cols-3 gap-3">
           <div><Label>Latitude</Label><Input type="number" step="any" value={form.lat} onChange={(e) => setForm({ ...form, lat: parseFloat(e.target.value) })} /></div>
