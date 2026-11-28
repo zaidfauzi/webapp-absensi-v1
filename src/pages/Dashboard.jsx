@@ -1,10 +1,18 @@
+import { useState } from 'react'
 import { useApp } from '../context/AppContext'
-import { Card, Badge } from '../components/ui'
+import { Card, Badge, Label, Input } from '../components/ui'
+import { toast } from 'sonner'
 import { Users, CheckCircle2, XCircle, Clock, LogOut as Out, Award, TrendingUp } from 'lucide-react'
 import { avatarUrl } from '../lib/mockData'
 
 export default function Dashboard() {
   const { employees, attendances, settings } = useApp()
+  const [discStart, setDiscStart] = useState(new Date().toISOString().slice(0, 10))
+  const [discEnd, setDiscEnd] = useState(new Date().toISOString().slice(0, 10))
+  const [discResults, setDiscResults] = useState([])
+  const [discHistory, setDiscHistory] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('disciplineHistory') || '[]') } catch { return [] }
+  })
   const today = new Date().toISOString().slice(0, 10)
   const todayAtt = attendances.filter((a) => a.date === today)
   const total = employees.length
@@ -31,6 +39,34 @@ export default function Dashboard() {
     return { e, late, present, score: present * 10 - late }
   }).sort((a, b) => b.score - a.score)
   const eom = score[0]
+
+  const computeDiscipline = () => {
+    const rows = attendances.filter((a) => a.date >= discStart && a.date <= discEnd)
+    const distinctDays = new Set(rows.map((a) => a.date)).size || 1
+    const results = employees.map((emp) => {
+      const empRows = rows.filter((a) => a.employeeId === emp.id)
+      const hadir = empRows.filter((a) => a.checkIn).length
+      const terlambat = empRows.filter((a) => a.status === 'terlambat').length
+      const izin = empRows.filter((a) => ['izin','sakit'].includes(a.status)).length
+      const alpa = Math.max(0, distinctDays - hadir - izin)
+      let scoreVal = Math.round((hadir / distinctDays) * 100) - (terlambat * 2) - (alpa * 5)
+      scoreVal = Math.max(0, Math.min(100, scoreVal))
+      const predikat = scoreVal >= 90 ? 'Sangat Baik' : scoreVal >= 75 ? 'Baik' : scoreVal >= 60 ? 'Cukup' : 'Kurang'
+      return { emp, hadir, terlambat, izin, alpa, score: scoreVal, predikat }
+    })
+    setDiscResults(results)
+  }
+
+  const saveDisciplineHistory = () => {
+    if (discResults.length === 0) { toast.error('Hitung penilaian terlebih dahulu'); return }
+    const entry = { id: 'dh-' + Date.now(), start: discStart, end: discEnd, results: discResults }
+    setDiscHistory((prev) => {
+      const next = [entry, ...prev]
+      localStorage.setItem('disciplineHistory', JSON.stringify(next))
+      return next
+    })
+    toast.success('Riwayat penilaian disimpan')
+  }
 
   const kpis = [
     { label: 'Total Pegawai', value: total, icon: Users, color: 'text-blue-600', bg: 'bg-blue-100 dark:bg-blue-900/40' },
@@ -133,6 +169,66 @@ export default function Dashboard() {
           </div>
           <img src={avatarUrl(eom?.e?.name)} className="h-12 w-12 rounded-full ml-auto" />
         </div>
+      </Card>
+
+      <Card className="p-5 space-y-4">
+        <h3 className="font-semibold">Penilaian Kedisiplinan Periodik</h3>
+        <div className="flex gap-3 flex-wrap items-end">
+          <div><Label>Dari</Label><Input type="date" value={discStart} onChange={(e) => setDiscStart(e.target.value)} /></div>
+          <div><Label>Sampai</Label><Input type="date" value={discEnd} onChange={(e) => setDiscEnd(e.target.value)} /></div>
+          <Button onClick={computeDiscipline}>Hitung</Button>
+          <Button variant="outline" onClick={saveDisciplineHistory}>Simpan Riwayat</Button>
+        </div>
+
+        {discResults.length > 0 && (
+          <div className="overflow-auto max-h-96">
+            <table className="w-full text-xs">
+              <thead className="text-left text-[var(--color-muted-foreground)]">
+                <tr><th className="py-1">Pegawai</th><th>Hadir</th><th>Terlambat</th><th>Izin</th><th>Alpa</th><th>Skor</th><th>Predikat</th></tr>
+              </thead>
+              <tbody>
+                {discResults.map((r, i) => (
+                  <tr key={i} className="border-t border-[var(--color-border)]">
+                    <td className="py-1">{r.emp.name}</td>
+                    <td>{r.hadir}</td>
+                    <td>{r.terlambat}</td>
+                    <td>{r.izin}</td>
+                    <td>{r.alpa}</td>
+                    <td className="font-bold">{r.score}</td>
+                    <td>{r.predikat}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+
+        {discHistory.length > 0 && (
+          <div className="space-y-2 mt-3">
+            <div className="text-sm font-medium">Riwayat Penilaian</div>
+            {discHistory.map((h) => (
+              <details key={h.id} className="p-3 rounded-xl bg-[var(--color-muted)] text-sm">
+                <summary className="cursor-pointer font-medium">{h.start} s/d {h.end} ({h.results.length} pegawai)</summary>
+                <div className="mt-2 overflow-auto">
+                  <table className="w-full text-xs">
+                    <thead className="text-left text-[var(--color-muted-foreground)]">
+                      <tr><th className="py-1">Pegawai</th><th>Skor</th><th>Predikat</th></tr>
+                    </thead>
+                    <tbody>
+                      {h.results.map((r, i) => (
+                        <tr key={i} className="border-t border-[var(--color-border)]">
+                          <td className="py-1">{r.emp.name}</td>
+                          <td>{r.score}</td>
+                          <td>{r.predikat}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </details>
+            ))}
+          </div>
+        )}
       </Card>
     </div>
   )
