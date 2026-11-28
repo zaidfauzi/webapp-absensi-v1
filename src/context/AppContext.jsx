@@ -98,41 +98,43 @@ export function AppProvider({ children }) {
   const toggleTheme = useCallback(() => setTheme((t) => (t === 'dark' ? 'light' : 'dark')), [])
 
   const addEmployee = useCallback((emp) => {
+    const { password, ...empData } = emp
     const id = 'e' + Date.now()
-    const row = { ...emp, id }
+    const row = { ...empData, id, password: undefined }
+    delete row.password
     setEmployees((prev) => [...prev, row])
     if (hasSupabase) supabase.from('employees').insert(toSnakeObj(row)).then(() => {})
     // create login account if password provided
-    if (emp.password) {
+    if (password) {
       const userId = 'u' + Date.now()
-      const userRow = { id: userId, username: emp.nip, passwordHash: emp.password, role: emp.role || 'pegawai', employeeId: id }
+      const userRow = { id: userId, username: emp.nip, passwordHash: password, role: emp.role || 'pegawai', employeeId: id }
       setUsers((prev) => [...prev, userRow])
       if (hasSupabase) supabase.from('users').insert(toSnakeObj(userRow)).then((r) => { if (r.error) console.warn(r.error) })
     }
   }, [])
   const updateEmployee = useCallback((id, patch) => {
-    setEmployees((prev) => prev.map((e) => (e.id === id ? { ...e, ...patch } : e)))
-    if (hasSupabase) supabase.from('employees').update(toSnakeObj(patch)).eq('id', id).then(() => {})
+    const { password, ...empPatch } = patch
+    setEmployees((prev) => prev.map((e) => (e.id === id ? { ...e, ...empPatch } : e)))
+    if (hasSupabase && Object.keys(empPatch).length) supabase.from('employees').update(toSnakeObj(empPatch)).eq('id', id).then(() => {})
     // sync user account
-    setUsers((prev) => prev.map((u) => (u.employeeId === id ? { ...u, username: patch.nip || u.username, role: patch.role || u.role, password: patch.password || u.password, passwordHash: patch.password || u.passwordHash } : u)))
-    const userPatch = {}
-    if (patch.nip) userPatch.username = patch.nip
-    if (patch.role) userPatch.role = patch.role
-    if (patch.password) userPatch.passwordHash = patch.password
-    if (Object.keys(userPatch).length && hasSupabase) {
-      // find user id by employee
-      // update all matching rows
-      supabase.from('users').update(toSnakeObj(userPatch)).eq('employee_id', id).then(() => {})
-    }
-    // if password provided and no user exists, create one
-    if (patch.password) {
-      setUsers((prev) => {
-        const exists = prev.some((u) => u.employeeId === id)
-        if (exists) return prev
-        const newRow = { id: 'u' + Date.now(), username: patch.nip || id, password: patch.password, passwordHash: patch.password, role: patch.role || 'pegawai', employeeId: id }
-        if (hasSupabase) supabase.from('users').insert(toSnakeObj(newRow)).then(() => {})
-        return [...prev, newRow]
-      })
+    if (password || patch.nip || patch.role) {
+      setUsers((prev) => prev.map((u) => (u.employeeId === id ? { ...u, username: patch.nip || u.username, role: patch.role || u.role, password: password || u.password, passwordHash: password || u.passwordHash } : u)))
+      const userPatch = {}
+      if (patch.nip) userPatch.username = patch.nip
+      if (patch.role) userPatch.role = patch.role
+      if (password) userPatch.passwordHash = password
+      if (Object.keys(userPatch).length && hasSupabase) {
+        supabase.from('users').update(toSnakeObj(userPatch)).eq('employee_id', id).then(() => {})
+      }
+      if (password) {
+        setUsers((prev) => {
+          const exists = prev.some((u) => u.employeeId === id)
+          if (exists) return prev
+          const newRow = { id: 'u' + Date.now(), username: patch.nip || id, password, passwordHash: password, role: patch.role || 'pegawai', employeeId: id }
+          if (hasSupabase) supabase.from('users').insert(toSnakeObj(newRow)).then(() => {})
+          return [...prev, newRow]
+        })
+      }
     }
   }, [])
   const deleteEmployee = useCallback((id) => {
