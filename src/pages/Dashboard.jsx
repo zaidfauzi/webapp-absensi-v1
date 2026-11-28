@@ -134,18 +134,6 @@ export default function Dashboard() {
         </Card>
       </div>
 
-      <Card className="p-5 bg-gradient-to-r from-amber-50 to-yellow-50 dark:from-amber-900/20 dark:to-yellow-900/20">
-        <div className="flex items-center gap-4">
-          <Award className="text-amber-500" size={32} />
-          <div>
-            <div className="text-xs text-[var(--color-muted-foreground)]">Apresiasi Pegawai Teladan</div>
-            <div className="text-lg font-bold">{eom?.e?.name}</div>
-            <div className="text-sm text-[var(--color-muted-foreground)]">{eom?.e?.position} · Kehadiran konsisten, 0 menit terlambat</div>
-          </div>
-          <img src={avatarUrl(eom?.e?.name)} className="h-12 w-12 rounded-full ml-auto" />
-        </div>
-      </Card>
-
       <Card className="p-5 space-y-4">
         <h3 className="font-semibold">Penilaian Kedisiplinan Periodik</h3>
         <div className="flex gap-3 flex-wrap items-end">
