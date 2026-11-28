@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useApp } from '../context/AppContext'
-import { Card, Badge, Label, Input } from '../components/ui'
+import { Card, Badge, Label, Input, Button } from '../components/ui'
 import { toast } from 'sonner'
 import { Users, CheckCircle2, XCircle, Clock, LogOut as Out, Award, TrendingUp } from 'lucide-react'
 import { avatarUrl } from '../lib/mockData'
