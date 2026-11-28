@@ -93,7 +93,7 @@ export default function Attendance() {
 
   const distance = pos ? haversine(pos.lat, pos.lng, settings.lat, settings.lng) : null
   const inRadius = distance !== null && distance <= settings.radius
-  const fakeGpsSuspect = pos && (pos.accuracy > 100 || distance > 100000)
+  const fakeGpsSuspect = pos && (pos.accuracy > 1000 || distance > 1000000)
 
   const submit = async () => {
     if (!emp) { toast.error('Akun tidak terhubung ke data pegawai'); return }
