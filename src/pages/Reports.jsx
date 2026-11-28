@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useApp } from '../context/AppContext'
 import { Card, Button, Select, Input, Label } from '../components/ui'
@@ -13,6 +13,12 @@ export default function Reports() {
   const { employees, attendances, settings } = useApp()
   const navigate = useNavigate()
   const [exportOpen, setExportOpen] = useState(false)
+  const [reportSettingsOpen, setReportSettingsOpen] = useState(false)
+  const [reportSettings, setReportSettings] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('reportSettings') || '{}') } catch { return {} }
+  })
+
+  useEffect(() => { localStorage.setItem('reportSettings', JSON.stringify(reportSettings)) }, [reportSettings])
   const [from, setFrom] = useState(new Date().toISOString().slice(0, 10))
   const [to, setTo] = useState(new Date().toISOString().slice(0, 10))
   const [empId, setEmpId] = useState('all')
@@ -63,26 +69,38 @@ export default function Reports() {
 
   const exportPdf = () => {
     const rows = buildRows()
-    const doc = new jsPDF('landscape')
+    const rs = { title: 'Laporan Kehadiran Pegawai', orientation: 'landscape', showSignature: true, footerNote: '', ...reportSettings }
+    const doc = new jsPDF(rs.orientation === 'portrait' ? 'portrait' : 'landscape')
+    const pageWidth = doc.internal.pageSize.getWidth()
     // letterhead
     doc.setFontSize(14); doc.text(settings.foundationName || '', 14, 12)
     doc.setFontSize(16); doc.text(settings.schoolName || '', 14, 20)
     doc.setFontSize(9); doc.text(settings.address || '', 14, 26)
     doc.text(`Telp: ${settings.phone} · Email: ${settings.email} · ${settings.website}`, 14, 31)
-    doc.line(14, 34, 283, 34)
-    doc.setFontSize(12); doc.text('Laporan Kehadiran Pegawai', 14, 42)
+    doc.line(14, 34, pageWidth - 14, 34)
+    doc.setFontSize(13); doc.text(rs.title || 'Laporan Kehadiran Pegawai', 14, 42)
     doc.setFontSize(9); doc.text(`Periode: ${from} s/d ${to}`, 14, 48)
+    if (rs.footerNote) { doc.setFontSize(8); doc.text(rs.footerNote, 14, 52) }
     autoTable(doc, {
-      startY: 52,
+      startY: rs.footerNote ? 56 : 52,
       head: [['Tanggal','NIP','Nama','Jabatan','Masuk','Pulang','Status','Telat','PC']],
       body: rows.map((r) => [r.Tanggal, r.NIP, r.Nama, r.Jabatan, r['Jam Masuk'], r['Jam Pulang'], r.Status, r['Terlambat (mnt)'], r['Pulang Cepat (mnt)']]),
       styles: { fontSize: 8 },
       headStyles: { fillColor: [15, 118, 110] },
     })
     const y = doc.lastAutoTable.finalY + 8
-    doc.text('Tata Usaha', 14, y + 10)
-    doc.text('Kepala Sekolah', 120, y + 10)
-    doc.text('Yayasan', 220, y + 10)
+    if (rs.showSignature !== false) {
+      doc.text('Tata Usaha', 14, y + 10)
+      doc.text('Kepala Sekolah', pageWidth / 2 - 20, y + 10)
+      doc.text('Yayasan', pageWidth - 40, y + 10)
+    }
+    // page numbers
+    const pageCount = doc.getNumberOfPages()
+    for (let i = 1; i <= pageCount; i++) {
+      doc.setPage(i)
+      doc.setFontSize(8)
+      doc.text(`Halaman ${i} dari ${pageCount}`, pageWidth - 40, doc.internal.pageSize.getHeight() - 8)
+    }
     doc.save(`laporan_absensi_${from}_${to}.pdf`)
     toast.success('PDF diunduh')
   }
@@ -141,8 +159,9 @@ export default function Reports() {
           </div>
 
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
           <Button onClick={() => setExportOpen(true)}><Download size={16} /> Ekspor</Button>
+          <Button variant="outline" onClick={() => setReportSettingsOpen(true)}>Pengaturan Laporan</Button>
           <Button onClick={() => window.print()}><Download size={16} /> Cetak</Button>
           <span className="text-xs text-[var(--color-muted-foreground)] self-center">{buildRows().length} baris data</span>
         </div>
@@ -177,6 +196,38 @@ export default function Reports() {
               <Button variant="outline" onClick={() => { exportPdf(); setExportOpen(false) }}>PDF (.pdf)</Button>
             </div>
             <Button variant="ghost" className="w-full" onClick={() => setExportOpen(false)}>Batal</Button>
+          </Card>
+        </div>
+      )}
+
+      {reportSettingsOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/40" onClick={() => setReportSettingsOpen(false)} />
+          <Card className="relative z-10 w-full max-w-md p-5 space-y-3">
+            <h3 className="font-semibold">Pengaturan Laporan (Cetak)</h3>
+            <div>
+              <Label>Judul Laporan</Label>
+              <Input value={reportSettings.title || ''} onChange={(e) => setReportSettings({ ...reportSettings, title: e.target.value })} placeholder="Laporan Kehadiran Pegawai" />
+            </div>
+            <div>
+              <Label>Orientasi PDF</Label>
+              <select className="h-10 w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-background)] px-3 text-sm" value={reportSettings.orientation || 'landscape'} onChange={(e) => setReportSettings({ ...reportSettings, orientation: e.target.value })}>
+                <option value="landscape">Landscape</option>
+                <option value="portrait">Portrait</option>
+              </select>
+            </div>
+            <div className="flex items-center gap-2">
+              <input type="checkbox" checked={reportSettings.showSignature !== false} onChange={(e) => setReportSettings({ ...reportSettings, showSignature: e.target.checked })} />
+              <span className="text-sm">Tampilkan blok tanda tangan</span>
+            </div>
+            <div>
+              <Label>Catatan Footer</Label>
+              <Input value={reportSettings.footerNote || ''} onChange={(e) => setReportSettings({ ...reportSettings, footerNote: e.target.value })} placeholder="Catatan tambahan..." />
+            </div>
+            <div className="flex gap-2">
+              <Button variant="outline" className="flex-1" onClick={() => setReportSettingsOpen(false)}>Tutup</Button>
+              <Button className="flex-1" onClick={() => setReportSettingsOpen(false)}>Simpan</Button>
+            </div>
           </Card>
         </div>
       )}
