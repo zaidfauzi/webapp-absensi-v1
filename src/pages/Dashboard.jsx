@@ -40,6 +40,9 @@ export default function Dashboard() {
   }).sort((a, b) => b.score - a.score)
   const eom = score[0]
 
+  const currentMonth = new Date().toISOString().slice(0, 7)
+  const monthAttendances = attendances.filter((a) => a.date?.startsWith(currentMonth))
+
   const computeDiscipline = () => {
     const rows = attendances.filter((a) => a.date >= discStart && a.date <= discEnd)
     const distinctDays = new Set(rows.map((a) => a.date)).size || 1
@@ -133,6 +136,31 @@ export default function Dashboard() {
           </div>
         </Card>
       </div>
+
+      <Card className="p-4">
+        <h3 className="font-semibold mb-3">Riwayat Absensi Bulan Ini</h3>
+        <div className="overflow-auto max-h-96">
+          <table className="w-full text-xs">
+            <thead className="text-left text-[var(--color-muted-foreground)]">
+              <tr><th className="py-1">Tanggal</th><th>Pegawai</th><th>Masuk</th><th>Pulang</th><th>Status</th></tr>
+            </thead>
+            <tbody>
+              {monthAttendances.sort((a, b) => b.date.localeCompare(a.date)).map((a) => {
+                const e = employees.find((x) => x.id === a.employeeId)
+                return (
+                  <tr key={a.id} className="border-t border-[var(--color-border)]">
+                    <td className="py-1">{a.date}</td>
+                    <td>{e?.name || a.employeeId}</td>
+                    <td>{a.checkIn ? new Date(a.checkIn).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) : '-'}</td>
+                    <td>{a.checkOut ? new Date(a.checkOut).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) : '-'}</td>
+                    <td>{a.status}</td>
+                  </tr>
+                )
+              })}
+            </tbody>
+          </table>
+        </div>
+      </Card>
 
       <Card className="p-5 space-y-4">
         <h3 className="font-semibold">Penilaian Kedisiplinan Periodik</h3>
