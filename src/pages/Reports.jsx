@@ -140,7 +140,6 @@ export default function Reports() {
         </div>
         <div className="flex gap-2 flex-wrap">
           <Button onClick={() => setExportOpen(true)}><Download size={16} /> Ekspor</Button>
-          <Button variant="outline" onClick={() => setReportSettingsOpen(true)}>Pengaturan Laporan</Button>
           <Button onClick={printReport}><Download size={16} /> Cetak</Button>
           <span className="text-xs text-[var(--color-muted-foreground)] self-center">{buildRows().length} baris data</span>
         </div>
@@ -179,37 +178,7 @@ export default function Reports() {
         </div>
       )}
 
-      {reportSettingsOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-black/40" onClick={() => setReportSettingsOpen(false)} />
-          <Card className="relative z-10 w-full max-w-md p-5 space-y-3">
-            <h3 className="font-semibold">Pengaturan Laporan (Cetak)</h3>
-            <div>
-              <Label>Judul Laporan</Label>
-              <Input value={reportSettings.title || ''} onChange={(e) => setReportSettings({ ...reportSettings, title: e.target.value })} placeholder="Laporan Kehadiran Pegawai" />
-            </div>
-            <div>
-              <Label>Orientasi PDF</Label>
-              <select className="h-10 w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-background)] px-3 text-sm" value={reportSettings.orientation || 'landscape'} onChange={(e) => setReportSettings({ ...reportSettings, orientation: e.target.value })}>
-                <option value="landscape">Landscape</option>
-                <option value="portrait">Portrait</option>
-              </select>
-            </div>
-            <div className="flex items-center gap-2">
-              <input type="checkbox" checked={reportSettings.showSignature !== false} onChange={(e) => setReportSettings({ ...reportSettings, showSignature: e.target.checked })} />
-              <span className="text-sm">Tampilkan blok tanda tangan</span>
-            </div>
-            <div>
-              <Label>Catatan Footer</Label>
-              <Input value={reportSettings.footerNote || ''} onChange={(e) => setReportSettings({ ...reportSettings, footerNote: e.target.value })} placeholder="Catatan tambahan..." />
-            </div>
-            <div className="flex gap-2">
-              <Button variant="outline" className="flex-1" onClick={() => setReportSettingsOpen(false)}>Tutup</Button>
-              <Button className="flex-1" onClick={() => setReportSettingsOpen(false)}>Simpan</Button>
-            </div>
-          </Card>
-        </div>
-      )}
+
     </div>
   )
 }
