@@ -109,6 +109,54 @@ export default function Reports() {
     exportXlsx()
   }
 
+  const printReport = () => {
+    const rows = buildRows()
+    const rs = { title: 'Laporan Kehadiran Pegawai', orientation: 'landscape', showSignature: true, footerNote: '', ...reportSettings }
+    const w = window.open('', '_blank')
+    if (!w) { toast.error('Popup diblokir browser'); return }
+    const thStyle = 'border:1px solid #999;padding:4px;background:#0f766e;color:#fff;font-size:10px;'
+    const tdStyle = 'border:1px solid #ddd;padding:4px;font-size:10px;'
+    const html = `
+      <html><head><title>${rs.title}</title>
+      <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .letterhead { text-align: center; margin-bottom: 10px; }
+        .letterhead h2 { margin: 0; font-size: 16px; }
+        .letterhead h3 { margin: 0; font-size: 12px; color: #555; }
+        .line { border-top: 2px solid #0f766e; margin: 10px 0; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        .sig { margin-top: 40px; display: flex; justify-content: space-between; }
+        .sig div { text-align: center; width: 30%; }
+        @media print { body { margin: 0; } }
+      </style></head><body>
+      <div class="letterhead">
+        <h2>${settings.foundationName || ''}</h2>
+        <h2>${settings.schoolName || ''}</h2>
+        <h3>${settings.address || ''}</h3>
+        <h3>Telp: ${settings.phone || ''} · Email: ${settings.email || ''} · ${settings.website || ''}</h3>
+      </div>
+      <div class="line"></div>
+      <h3>${rs.title || 'Laporan Kehadiran Pegawai'}</h3>
+      <p style="font-size:11px;">Periode: ${from} s/d ${to}</p>
+      ${rs.footerNote ? `<p style="font-size:10px;">${rs.footerNote}</p>` : ''}
+      <table>
+        <thead><tr>
+          <th style="${thStyle}">Tanggal</th><th style="${thStyle}">NIP</th><th style="${thStyle}">Nama</th><th style="${thStyle}">Jabatan</th><th style="${thStyle}">Masuk</th><th style="${thStyle}">Pulang</th><th style="${thStyle}">Status</th><th style="${thStyle}">Telat</th><th style="${thStyle}">PC</th>
+        </tr></thead>
+        <tbody>
+          ${rows.map((r) => `<tr>
+            <td style="${tdStyle}">${r.Tanggal}</td><td style="${tdStyle}">${r.NIP}</td><td style="${tdStyle}">${r.Nama}</td><td style="${tdStyle}">${r.Jabatan}</td><td style="${tdStyle}">${r['Jam Masuk']}</td><td style="${tdStyle}">${r['Jam Pulang']}</td><td style="${tdStyle}">${r.Status}</td><td style="${tdStyle}">${r['Terlambat (mnt)']}</td><td style="${tdStyle}">${r['Pulang Cepat (mnt)']}</td>
+          </tr>`).join('')}
+        </tbody>
+      </table>
+      ${rs.showSignature !== false ? `<div class="sig"><div>Tata Usaha<br/><br/><br/>____________</div><div>Kepala Sekolah<br/><br/><br/>____________</div><div>Yayasan<br/><br/><br/>____________</div></div>` : ''}
+      <script>window.onload = function(){ window.print(); }</script>
+      </body></html>
+    `
+    w.document.write(html)
+    w.document.close()
+  }
+
   // Rekap per pegawai
   const recapEmployee = () => {
     const map = {}
@@ -162,7 +210,7 @@ export default function Reports() {
         <div className="flex gap-2 flex-wrap">
           <Button onClick={() => setExportOpen(true)}><Download size={16} /> Ekspor</Button>
           <Button variant="outline" onClick={() => setReportSettingsOpen(true)}>Pengaturan Laporan</Button>
-          <Button onClick={() => window.print()}><Download size={16} /> Cetak</Button>
+          <Button onClick={printReport}><Download size={16} /> Cetak</Button>
           <span className="text-xs text-[var(--color-muted-foreground)] self-center">{buildRows().length} baris data</span>
         </div>
       </Card>
