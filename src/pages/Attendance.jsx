@@ -29,6 +29,7 @@ export default function Attendance() {
   const [liveness, setLiveness] = useState(false)
   const [capturedFaceDescriptor, setCapturedFaceDescriptor] = useState(null)
   const [faceMsg, setFaceMsg] = useState('')
+  const [confirmOpen, setConfirmOpen] = useState(false)
 
 
   const today = new Date().toISOString().slice(0, 10)
@@ -136,6 +137,7 @@ export default function Attendance() {
     }
     setLoading(false)
     toast.success(mode === 'in' ? 'Absen masuk berhasil' : 'Absen pulang berhasil')
+    setConfirmOpen(true)
   }
 
   if (!currentUser) {
@@ -232,6 +234,35 @@ export default function Attendance() {
         </Button>
         {(!inRadius && pos) && <p className="text-xs text-red-600 mt-2 flex items-center gap-1"><AlertTriangle size={12} /> Anda berada di luar radius sekolah.</p>}
       </Card>
+
+      {confirmOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/40" onClick={() => setConfirmOpen(false)} />
+          <Card className="relative z-10 w-full max-w-lg p-5 space-y-3">
+            <h3 className="font-semibold text-emerald-600">Absen Diterima</h3>
+            <p className="text-sm">Absensi Anda telah berhasil dicatat.</p>
+            <div className="text-sm font-medium">Riwayat Absensi</div>
+            <div className="overflow-auto max-h-64">
+              <table className="w-full text-xs">
+                <thead className="text-left text-[var(--color-muted-foreground)]">
+                  <tr><th className="py-1">Tanggal</th><th>Masuk</th><th>Pulang</th><th>Status</th></tr>
+                </thead>
+                <tbody>
+                  {attendances.filter((a) => a.employeeId === emp?.id).sort((a, b) => b.date.localeCompare(a.date)).slice(0, 10).map((a) => (
+                    <tr key={a.id} className="border-t border-[var(--color-border)]">
+                      <td className="py-1">{a.date}</td>
+                      <td>{a.checkIn ? fmtTime(a.checkIn) : '-'}</td>
+                      <td>{a.checkOut ? fmtTime(a.checkOut) : '-'}</td>
+                      <td>{a.status}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <Button className="w-full" onClick={() => setConfirmOpen(false)}>Tutup</Button>
+          </Card>
+        </div>
+      )}
     </div>
   )
 }
