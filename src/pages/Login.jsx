@@ -80,6 +80,18 @@ export default function Login() {
           <Button variant="accent" className="w-full mt-3" onClick={install}>
             <Download size={16} /> Install Aplikasi (APK)
           </Button>
+          <Button variant="ghost" className="w-full text-xs" onClick={async () => {
+            try {
+              localStorage.clear()
+              if ('serviceWorker' in navigator) {
+                const regs = await navigator.serviceWorker.getRegistrations()
+                await Promise.all(regs.map((r) => r.unregister()))
+              }
+              window.location.reload()
+            } catch (e) { alert(e.message) }
+          }}>
+            Reset Cache & Reload
+          </Button>
 
           <details className="mt-4 text-xs text-[var(--color-muted-foreground)]">
             <summary className="cursor-pointer">Akun demo</summary>
