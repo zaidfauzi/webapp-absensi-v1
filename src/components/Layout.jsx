@@ -1,8 +1,8 @@
 import { NavLink, useNavigate } from 'react-router-dom'
 import { useApp } from '../context/AppContext'
+import { useState, useMemo } from 'react'
 import { Button } from './ui'
 import { LayoutDashboard, Users, CalendarDays, ClipboardList, FileBarChart, Settings, LogOut, Moon, Sun, Menu, X, Camera, User } from 'lucide-react'
-import { useState } from 'react'
 
 const navItems = [
   { to: '/', label: 'Dashboard', icon: LayoutDashboard, roles: ['admin','yayasan','kepsek','wakasek','tu'] },
@@ -16,11 +16,27 @@ const navItems = [
 ]
 
 export default function Layout({ children }) {
-  const { currentUser, logout, theme, toggleTheme, settings } = useApp()
+  const { currentUser, logout, theme, toggleTheme, settings, employees, attendances } = useApp()
+  const [widgetOpen, setWidgetOpen] = useState(true)
   const navigate = useNavigate()
   const [open, setOpen] = useState(false)
   const role = currentUser?.role
   const items = navItems.filter((n) => n.roles.includes(role))
+
+  const { topRajin, topTelat } = useMemo(() => {
+    const now = new Date()
+    const ym = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
+    const monthAtt = attendances.filter((a) => a.date?.startsWith(ym))
+    const stats = employees.map((e) => {
+      const rows = monthAtt.filter((a) => a.employeeId === e.id)
+      const telat = rows.filter((a) => a.status === 'terlambat' || (a.lateMinutes || 0) > 0).length
+      const tepat = rows.filter((a) => a.checkIn && !(a.status === 'terlambat') && !(a.lateMinutes > 0)).length
+      return { e, telat, tepat, total: rows.length }
+    }).filter((s) => s.total > 0)
+    const topRajin = [...stats].sort((a, b) => b.tepat - a.tepat || a.telat - b.telat).slice(0, 2)
+    const topTelat = [...stats].sort((a, b) => b.telat - a.telat).slice(0, 2)
+    return { topRajin, topTelat }
+  }, [employees, attendances])
 
   const handleLogout = () => { logout(); navigate('/login') }
 
@@ -43,6 +59,36 @@ export default function Layout({ children }) {
             </NavLink>
           ))}
         </nav>
+        <div className="p-3 border-t border-[var(--color-border)]">
+          <button onClick={() => setWidgetOpen((o) => !o)} className="w-full flex items-center justify-between text-xs font-semibold text-[var(--color-muted-foreground)] mb-2">
+            <span>Ringkasan Bulan Ini</span>
+            <span>{widgetOpen ? '▾' : '▸'}</span>
+          </button>
+          {widgetOpen && (
+            <div className="space-y-2 text-xs">
+              <div>
+                <div className="font-medium mb-1">Top Rajin</div>
+                {topRajin.length === 0 && <div className="text-[var(--color-muted-foreground)]">Belum ada data</div>}
+                {topRajin.map((s) => (
+                  <div key={s.e.id} className="flex items-center justify-between">
+                    <span className="truncate">{s.e.name}</span>
+                    <span className="ml-2 px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300">{s.tepat} tepat</span>
+                  </div>
+                ))}
+              </div>
+              <div>
+                <div className="font-medium mb-1">Sering Telat</div>
+                {topTelat.length === 0 && <div className="text-[var(--color-muted-foreground)]">Belum ada data</div>}
+                {topTelat.map((s) => (
+                  <div key={s.e.id} className="flex items-center justify-between">
+                    <span className="truncate">{s.e.name}</span>
+                    <span className="ml-2 px-1.5 py-0.5 rounded bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300">{s.telat} telat</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
         <div className="p-3 border-t border-[var(--color-border)] space-y-1">
           <button onClick={toggleTheme} className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium hover:bg-[var(--color-muted)]">
             {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />} {theme === 'dark' ? 'Mode Terang' : 'Mode Gelap'}
