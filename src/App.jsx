@@ -15,7 +15,10 @@ import { Toaster } from 'sonner'
 function Protected({ children, allowedRoles }) {
   const { currentUser } = useApp()
   if (!currentUser) return <Navigate to="/login" replace />
-  if (allowedRoles && !allowedRoles.includes(currentUser.role)) return <Navigate to="/" replace />
+  if (allowedRoles && !allowedRoles.includes(currentUser.role)) {
+    if (currentUser.role === 'pegawai') return <Navigate to="/attendance" replace />
+    return <Navigate to="/" replace />
+  }
   return <Layout>{children}</Layout>
 }
 
