@@ -74,15 +74,14 @@ export default function Reports() {
     if (settings.logoUrl) {
       try { doc.addImage(settings.logoUrl, 'PNG', cx - 9, 6, 18, 18) } catch {}
     }
-    doc.setFontSize(14); doc.text(settings.foundationName || '', cx, settings.logoUrl ? 28 : 12, { align: 'center' })
-    doc.setFontSize(16); doc.text(settings.schoolName || '', cx, settings.logoUrl ? 36 : 20, { align: 'center' })
-    doc.setFontSize(9); doc.text(settings.address || '', cx, settings.logoUrl ? 42 : 26, { align: 'center' })
-    doc.text(`Telp: ${settings.phone} · Email: ${settings.email} · ${settings.website}`, cx, settings.logoUrl ? 47 : 31, { align: 'center' })
-    doc.line(14, settings.logoUrl ? 50 : 34, pageWidth - 14, settings.logoUrl ? 50 : 34)
-    const titleY = settings.logoUrl ? 56 : 42
-    const periodY = settings.logoUrl ? 62 : 48
-    const noteY = settings.logoUrl ? 66 : 52
-    const tableStartY = settings.logoUrl ? (rs.footerNote ? 70 : 66) : (rs.footerNote ? 56 : 52)
+    doc.setFontSize(16); doc.text(settings.schoolName || '', cx, settings.logoUrl ? 28 : 12, { align: 'center' })
+    doc.setFontSize(9); doc.text(settings.address || '', cx, settings.logoUrl ? 36 : 18, { align: 'center' })
+    doc.text(`Telp: ${settings.phone} · Email: ${settings.email} · ${settings.website}`, cx, settings.logoUrl ? 41 : 23, { align: 'center' })
+    doc.line(14, settings.logoUrl ? 44 : 26, pageWidth - 14, settings.logoUrl ? 44 : 26)
+    const titleY = settings.logoUrl ? 50 : 32
+    const periodY = settings.logoUrl ? 56 : 38
+    const noteY = settings.logoUrl ? 60 : 42
+    const tableStartY = settings.logoUrl ? (rs.footerNote ? 64 : 60) : (rs.footerNote ? 46 : 42)
     doc.setFontSize(13); doc.text(rs.title || 'Laporan Kehadiran Pegawai', 14, titleY)
     doc.setFontSize(9); doc.text(`Periode: ${from} s/d ${to}`, 14, periodY)
     if (rs.footerNote) { doc.setFontSize(8); doc.text(rs.footerNote, 14, noteY) }
