@@ -259,7 +259,7 @@ export default function Attendance() {
                 </tbody>
               </table>
             </div>
-            <Button className="w-full" onClick={() => setConfirmOpen(false)}>Tutup</Button>
+            <Button className="w-full" onClick={() => { setConfirmOpen(false); if (currentUser) navigate('/') ; else navigate('/login') }}>Tutup</Button>
           </Card>
         </div>
       )}
