@@ -26,6 +26,7 @@ export default function Attendance() {
   const [capturedFaceDescriptor, setCapturedFaceDescriptor] = useState(null)
   const [faceMsg, setFaceMsg] = useState('')
 
+
   const today = new Date().toISOString().slice(0, 10)
   const myAtt = attendances.find((a) => a.employeeId === emp?.id && a.date === today)
 
@@ -95,13 +96,13 @@ export default function Attendance() {
   const inRadius = distance !== null && distance <= settings.radius
   const fakeGpsSuspect = pos && (pos.accuracy > 1000 || distance > 1000000)
 
-  const submit = async () => {
+  const submit = async (useGpsOnly = false) => {
     if (!emp) { toast.error('Akun tidak terhubung ke data pegawai'); return }
-    if (!photo) { toast.error('Ambil foto terlebih dahulu'); return }
+    if (!useGpsOnly && !photo) { toast.error('Ambil foto terlebih dahulu'); return }
     if (!pos) { toast.error('Lokasi belum tersedia'); return }
     if (!inRadius) { toast.error(`Di luar radius (${Math.round(distance)}m > ${settings.radius}m)`); return }
     if (settings.antiFakeGps && fakeGpsSuspect) { toast.error('Terdeteksi indikasi Fake GPS'); return }
-    if (emp?.faceDescriptor) {
+    if (!useGpsOnly && emp?.faceDescriptor) {
       try {
         if (!capturedFaceDescriptor) { toast.error('Wajah tidak terdeteksi'); return }
         const dist = faceDistance(capturedFaceDescriptor, emp.faceDescriptor)
@@ -219,7 +220,10 @@ export default function Attendance() {
           </div>
         )}
 
-        <Button onClick={submit} disabled={loading || !photo || !inRadius} className="w-full" size="lg">
+        <Button variant="outline" onClick={() => submit(true)} disabled={loading || !pos || !inRadius} className="w-full">
+          {loading ? 'Menyimpan...' : 'Absen Cepat GPS (Tanpa Wajah)'}
+        </Button>
+        <Button onClick={() => submit(false)} disabled={loading || !photo || !inRadius} className="w-full" size="lg">
           {loading ? 'Menyimpan...' : (mode === 'in' ? 'Kirim Absen Masuk' : 'Kirim Absen Pulang')}
         </Button>
         {(!inRadius && pos) && <p className="text-xs text-red-600 mt-2 flex items-center gap-1"><AlertTriangle size={12} /> Anda berada di luar radius sekolah.</p>}
