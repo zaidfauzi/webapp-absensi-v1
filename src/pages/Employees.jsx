@@ -1,11 +1,12 @@
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { useApp } from '../context/AppContext'
 import { Card, Button, Input, Select, Label, Badge } from '../components/ui'
 import { Plus, Pencil, Trash2, Search, X } from 'lucide-react'
 import { avatarUrl } from '../lib/mockData'
+import { loadFaceModels, getFaceDescriptor } from '../lib/face'
 import { toast } from 'sonner'
 
-const empty = { nip: '', name: '', gender: 'L', phone: '', email: '', position: 'Guru', scheduleGroup: 'guru', status: 'aktif', role: 'pegawai', password: '', photoUrl: '' }
+const empty = { nip: '', name: '', gender: 'L', phone: '', email: '', position: 'Guru', scheduleGroup: 'guru', status: 'aktif', role: 'pegawai', password: '', photoUrl: '', faceDescriptor: null }
 
 export default function Employees() {
   const { employees, addEmployee, updateEmployee, deleteEmployee } = useApp()
@@ -13,6 +14,34 @@ export default function Employees() {
   const [editing, setEditing] = useState(null)
   const [form, setForm] = useState(empty)
   const [open, setOpen] = useState(false)
+  const videoRef = useRef(null)
+  const [faceStream, setFaceStream] = useState(null)
+  const [faceLoading, setFaceLoading] = useState(false)
+  const [faceMsg, setFaceMsg] = useState('')
+
+  const startFaceCamera = async () => {
+    try {
+      const s = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' }, audio: false })
+      setFaceStream(s)
+      if (videoRef.current) videoRef.current.srcObject = s
+    } catch (e) { setFaceMsg('Kamera tidak dapat diakses: ' + e.message) }
+  }
+
+  useEffect(() => { if (faceStream && videoRef.current) videoRef.current.srcObject = faceStream }, [faceStream])
+
+  const captureFace = async () => {
+    if (!videoRef.current) return
+    setFaceLoading(true)
+    setFaceMsg('Memproses wajah...')
+    const desc = await getFaceDescriptor(videoRef.current)
+    setFaceLoading(false)
+    if (desc) {
+      setForm((f) => ({ ...f, faceDescriptor: desc }))
+      setFaceMsg('Wajah berhasil direkam')
+    } else {
+      setFaceMsg('Wajah tidak terdeteksi. Coba lagi.')
+    }
+  }
 
   const filtered = employees.filter((e) => e.name.toLowerCase().includes(q.toLowerCase()) || e.nip.includes(q))
 
@@ -98,6 +127,20 @@ export default function Employees() {
                     r.readAsDataURL(f)
                   }} />
                 </div>
+              </div>
+              <div className="col-span-2 space-y-2">
+                <Label>Rekam Wajah (Face Recognition)</Label>
+                <div className="flex gap-2">
+                  {!faceStream ? (
+                    <Button type="button" size="sm" onClick={startFaceCamera}>Aktifkan Kamera</Button>
+                  ) : (
+                    <Button type="button" size="sm" onClick={captureFace} disabled={faceLoading}>{faceLoading ? 'Memproses...' : 'Rekam Wajah'}</Button>
+                  )}
+                  {faceStream && <Button type="button" size="sm" variant="outline" onClick={() => { faceStream.getTracks().forEach((t) => t.stop()); setFaceStream(null) }}>Tutup Kamera</Button>}
+                </div>
+                {faceStream && <video ref={videoRef} autoPlay playsInline muted className="w-full rounded-xl bg-black" />}
+                {form.faceDescriptor && <p className="text-xs text-emerald-600">Wajah tersimpan ({form.faceDescriptor.length} dimensi)</p>}
+                {faceMsg && <p className="text-xs text-[var(--color-muted-foreground)]">{faceMsg}</p>}
               </div>
               <div><Label>Jabatan</Label>
                 <Select value={form.position} onChange={(e) => setForm({ ...form, position: e.target.value })}>

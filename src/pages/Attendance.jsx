@@ -4,6 +4,7 @@ import { useApp } from '../context/AppContext'
 import { Card, Button, Badge, Input } from '../components/ui'
 import { Camera, MapPin, CheckCircle2, AlertTriangle, RefreshCw } from 'lucide-react'
 import { haversine, fmtTime } from '../lib/utils'
+import { getFaceDescriptor, faceDistance } from '../lib/face'
 import { toast } from 'sonner'
 
 export default function Attendance() {
@@ -22,6 +23,8 @@ export default function Attendance() {
   const [mode, setMode] = useState('in')
   const [loading, setLoading] = useState(false)
   const [liveness, setLiveness] = useState(false)
+  const [capturedFaceDescriptor, setCapturedFaceDescriptor] = useState(null)
+  const [faceMsg, setFaceMsg] = useState('')
 
   const today = new Date().toISOString().slice(0, 10)
   const myAtt = attendances.find((a) => a.employeeId === emp?.id && a.date === today)
@@ -50,7 +53,7 @@ export default function Attendance() {
     if (stream && videoRef.current) videoRef.current.srcObject = stream
   }, [stream])
 
-  const capture = () => {
+  const capture = async () => {
     const v = videoRef.current
     const c = canvasRef.current
     if (!v || !c) return
@@ -71,6 +74,12 @@ export default function Attendance() {
     setPhoto(data)
     setLiveness(true)
     toast.success('Foto tercapture dengan watermark')
+    // face recognition
+    setFaceMsg('Memverifikasi wajah...')
+    const desc = await getFaceDescriptor(v)
+    setCapturedFaceDescriptor(desc)
+    if (desc) setFaceMsg('Wajah terdeteksi')
+    else setFaceMsg('Wajah tidak terdeteksi')
   }
 
   const distance = pos ? haversine(pos.lat, pos.lng, settings.lat, settings.lng) : null
@@ -83,6 +92,11 @@ export default function Attendance() {
     if (!pos) { toast.error('Lokasi belum tersedia'); return }
     if (!inRadius) { toast.error(`Di luar radius (${Math.round(distance)}m > ${settings.radius}m)`); return }
     if (settings.antiFakeGps && fakeGpsSuspect) { toast.error('Terdeteksi indikasi Fake GPS'); return }
+    if (emp?.faceDescriptor) {
+      if (!capturedFaceDescriptor) { toast.error('Wajah tidak terdeteksi'); return }
+      const dist = faceDistance(capturedFaceDescriptor, emp.faceDescriptor)
+      if (dist > 0.6) { toast.error('Wajah tidak cocok dengan data pegawai'); return }
+    }
 
     setLoading(true)
     const now = new Date()
@@ -176,8 +190,8 @@ export default function Attendance() {
             <Button onClick={capture} disabled={!stream} className="flex-1"><Camera size={16} /> Ambil Foto</Button>
           ) : (
             <>
-              <Button variant="outline" onClick={() => { setPhoto(null); setLiveness(false) }} className="flex-1"><RefreshCw size={16} /> Ulangi</Button>
-              <div className="flex-1 flex items-center justify-center text-xs text-emerald-600 gap-1"><CheckCircle2 size={14} /> Wajah terverifikasi</div>
+              <Button variant="outline" onClick={() => { setPhoto(null); setLiveness(false); setCapturedFaceDescriptor(null); setFaceMsg('') }} className="flex-1"><RefreshCw size={16} /> Ulangi</Button>
+              <div className="flex-1 flex items-center justify-center text-xs text-emerald-600 gap-1"><CheckCircle2 size={14} /> Wajah terverifikasi {faceMsg && `· ${faceMsg}`}</div>
             </>
           )}
         </div>
